@@ -1,11 +1,13 @@
 import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
 import * as loginCommand from './commands/login';
+import * as setupCommand from './commands/setup';
 import * as campaignsCommand from './commands/campaigns';
 import * as recordCommand from './commands/record';
 import * as stopCommand from './commands/stop';
 
 const commands = [
   loginCommand,
+  setupCommand,
   campaignsCommand,
   recordCommand,
   stopCommand,
