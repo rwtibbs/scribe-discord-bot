@@ -163,6 +163,35 @@ Optional environment variables:
 - **Cognito Sub Usage**: All GraphQL calls use Cognito sub (user ID) instead of username for proper authentication
 - **Database Validation**: Every request validates session existence and token status
 
+## Known Limitations
+
+### Voice Recording on Replit
+⚠️ **IMPORTANT: Voice recording does not work on standard Replit hosting.**
+
+Discord voice connections require:
+- **WebSocket (TCP)** - for signaling/control ✅ Works
+- **UDP ports 50000-65535** - for voice data transmission ❌ Blocked by Replit
+
+The bot will successfully join voice channels (you'll see it appear in the channel), but the voice connection times out after 20-30 seconds because UDP traffic is blocked. The connection gets stuck in "connecting" state and never reaches "ready".
+
+**Connection State Observed:**
+```
+signalling → connecting → [stuck] → timeout → destroyed
+```
+
+### Solutions
+
+1. **Deploy to Reserved VM** - Replit's Reserved VM Deployments may support UDP (not confirmed)
+2. **Alternative Hosting** - Deploy to VPS (DigitalOcean, AWS EC2) or specialized Discord bot hosting (Railway, Fly.io)
+3. **Hybrid Approach** - Keep web UI on Replit, run bot on UDP-compatible hosting, share the same database
+
+All non-voice features work perfectly on Replit:
+- ✅ Authentication (`/setup`)
+- ✅ Campaign listing (`/campaigns`)
+- ✅ Database operations
+- ✅ GraphQL API integration
+- ❌ Voice recording (UDP required)
+
 ## Notes
 
 - Bot must have permission to join voice channels
