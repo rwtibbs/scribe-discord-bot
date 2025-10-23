@@ -45,22 +45,20 @@ export default function Campaigns() {
   }
 
   const copyToClipboard = async (campaignName: string, campaignId: string) => {
-    const command = `/record ${campaignName}`;
-    
     try {
-      await navigator.clipboard.writeText(command);
+      await navigator.clipboard.writeText(campaignName);
       setCopiedId(campaignId);
       
       toast({
-        title: "📋 Command Copied!",
-        description: `Paste in Discord to start recording: ${command}`,
+        title: "📋 Campaign Name Copied!",
+        description: `Type /record in Discord, then paste: ${campaignName}`,
       });
 
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
       toast({
         title: "Copy Failed",
-        description: "Please manually copy the command",
+        description: "Please manually copy the campaign name",
         variant: "destructive",
       });
     }
@@ -75,7 +73,7 @@ export default function Campaigns() {
             <h1 className="text-3xl font-bold text-foreground">Your Campaigns</h1>
           </div>
           <p className="text-muted-foreground">
-            Click a campaign to copy the record command
+            Click a campaign to copy its name
           </p>
         </div>
 
@@ -158,9 +156,9 @@ export default function Campaigns() {
             <CardTitle className="text-lg">How to Use</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>1. Click on a campaign card above to copy the record command</p>
+            <p>1. Click on a campaign card above to copy its name</p>
             <p>2. Join a voice channel in Discord</p>
-            <p>3. Paste the command in any channel</p>
+            <p>3. Type <code className="bg-background px-1 rounded">/record</code> in any channel and paste the campaign name</p>
             <p>4. The bot will start recording your session</p>
             <p>5. Use <code className="bg-background px-1 rounded">/stop</code> when finished</p>
           </CardContent>
