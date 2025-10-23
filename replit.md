@@ -85,6 +85,11 @@ Required secrets (configured in Replit Secrets):
 - `AWS_ACCESS_KEY_ID` - AWS access key
 - `AWS_SECRET_ACCESS_KEY` - AWS secret access key
 
+**For Reserved VM Deployments:**
+- `PUBLIC_URL` - **REQUIRED** for deployments. Set this to your deployment URL (e.g., `https://your-subdomain.replit.app`)
+  - Without this, the `/setup` command will fail on deployed bots
+  - Not needed in development (auto-detected)
+
 Optional environment variables:
 - `AWS_ENVIRONMENT` - Set to 'DEVSORT' for dev environment (defaults to 'DEV')
 - `AWS_REGION` - AWS region (defaults to 'us-east-2')

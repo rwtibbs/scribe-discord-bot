@@ -8,9 +8,10 @@ export const data = new SlashCommandBuilder()
   .setDescription('Get a secure link to configure your TabletopScribe account');
 
 function getBaseUrl(): string {
-  // Check for deployment URL first (Reserved VM, Autoscale, Static)
-  if (process.env.REPLIT_DEPLOYMENT_URL) {
-    return process.env.REPLIT_DEPLOYMENT_URL;
+  // Check for custom PUBLIC_URL (for deployments)
+  // User should set this to their deployment URL like: https://scribe-bot.replit.app
+  if (process.env.PUBLIC_URL) {
+    return process.env.PUBLIC_URL;
   }
   
   // Fallback to dev domain (development environment)
