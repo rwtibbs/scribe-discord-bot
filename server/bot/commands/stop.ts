@@ -2,6 +2,14 @@ import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
   EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ButtonInteraction,
+  ModalSubmitInteraction,
 } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { sessionManager } from '../session-manager';
@@ -17,6 +25,17 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const execAsync = promisify(exec);
+
+// Store processed recordings waiting for user confirmation
+const pendingUploads = new Map<string, {
+  mp3FilePath: string;
+  audioUrl: string;
+  duration: number;
+  fileSizeMB: string;
+  campaignId: string;
+  campaignName: string;
+  startedAt: Date;
+}>();
 
 export const data = new SlashCommandBuilder()
   .setName('stop')
@@ -105,46 +124,53 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const s3FileName = `discord_${recordingSession.campaignName.replace(/\s+/g, '_')}_${Date.now()}.mp3`;
     const audioUrl = await uploadAudioToS3(mp3FilePath, s3FileName);
 
-    processingEmbed.setFields(
-      { name: 'Duration', value: `${Math.floor(duration / 60)}m ${duration % 60}s`, inline: true },
-      { name: 'File Size', value: `${fileSizeMB} MB`, inline: true },
-      { name: 'Status', value: '🔗 Creating session...', inline: false }
-    );
-    await interaction.editReply({ embeds: [processingEmbed] });
-
-    const sessionName = `${recordingSession.campaignName} - Discord Recording`;
-    const transcriptionUrl = audioUrl.replace('.mp3', '.txt');
-    
-    const session = await graphqlClient.createSession({
-      name: sessionName,
+    // Store pending upload data
+    pendingUploads.set(interaction.user.id, {
+      mp3FilePath,
+      audioUrl,
       duration,
-      audioFile: audioUrl,
-      transcriptionFile: transcriptionUrl,
-      transcriptionStatus: 'UPLOADED',
-      campaignSessionsId: recordingSession.campaignId,
-      date: recordingSession.startedAt.toISOString(),
-    }, dbSession.accessToken);
-
-    fs.unlinkSync(mp3FilePath);
+      fileSizeMB,
+      campaignId: recordingSession.campaignId,
+      campaignName: recordingSession.campaignName,
+      startedAt: recordingSession.startedAt,
+    });
 
     sessionManager.endRecording(interaction.user.id);
 
-    const successEmbed = new EmbedBuilder()
+    // Show confirmation with buttons
+    const confirmEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.SUCCESS)
-      .setTitle('✅ Session Uploaded Successfully')
-      .setDescription('Your recording is ready in TabletopScribe!')
+      .setTitle('📼 Recording Ready')
+      .setDescription('Your recording has been processed and is ready to submit!')
       .addFields(
-        { name: 'Session Name', value: sessionName, inline: false },
         { name: 'Duration', value: `${Math.floor(duration / 60)}m ${duration % 60}s`, inline: true },
         { name: 'Campaign', value: recordingSession.campaignName, inline: true },
         { name: 'File Size', value: `${fileSizeMB} MB`, inline: true }
       )
-      .setFooter({ text: 'Processing will continue automatically in TabletopScribe' })
+      .setFooter({ text: 'Click Submit to name and upload, or Delete to discard' })
       .setTimestamp();
 
-    await interaction.editReply({ embeds: [successEmbed] });
+    const submitButton = new ButtonBuilder()
+      .setCustomId('submit_recording')
+      .setLabel('Submit to TabletopScribe')
+      .setStyle(ButtonStyle.Success)
+      .setEmoji('✅');
 
-    console.log(`✅ Recording uploaded successfully for user ${interaction.user.tag}`);
+    const deleteButton = new ButtonBuilder()
+      .setCustomId('delete_recording')
+      .setLabel('Delete Recording')
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji('🗑️');
+
+    const row = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(submitButton, deleteButton);
+
+    await interaction.editReply({ 
+      embeds: [confirmEmbed],
+      components: [row]
+    });
+
+    console.log(`📼 Recording ready for user ${interaction.user.tag}, awaiting confirmation`);
   } catch (error: any) {
     console.error('Stop error:', error);
 
@@ -160,5 +186,151 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTimestamp();
 
     await interaction.editReply({ embeds: [errorEmbed] });
+  }
+}
+
+// Handle submit button - show modal for session name
+export async function handleSubmitButton(interaction: ButtonInteraction) {
+  const pending = pendingUploads.get(interaction.user.id);
+  
+  if (!pending) {
+    await interaction.reply({
+      content: '❌ No pending recording found. Please record again.',
+      ephemeral: true
+    });
+    return;
+  }
+
+  // Show modal to collect session name
+  const modal = new ModalBuilder()
+    .setCustomId('session_name_modal')
+    .setTitle('Name Your Session');
+
+  const sessionNameInput = new TextInputBuilder()
+    .setCustomId('session_name')
+    .setLabel('Session Name')
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder(`${pending.campaignName} - Discord Recording`)
+    .setValue(`${pending.campaignName} - Discord Recording`)
+    .setRequired(true)
+    .setMaxLength(100);
+
+  const row = new ActionRowBuilder<TextInputBuilder>().addComponents(sessionNameInput);
+  modal.addComponents(row);
+
+  await interaction.showModal(modal);
+}
+
+// Handle delete button - remove recording
+export async function handleDeleteButton(interaction: ButtonInteraction) {
+  const pending = pendingUploads.get(interaction.user.id);
+  
+  if (!pending) {
+    await interaction.reply({
+      content: '❌ No pending recording found.',
+      ephemeral: true
+    });
+    return;
+  }
+
+  // Delete the MP3 file
+  if (fs.existsSync(pending.mp3FilePath)) {
+    fs.unlinkSync(pending.mp3FilePath);
+  }
+
+  pendingUploads.delete(interaction.user.id);
+
+  const deleteEmbed = new EmbedBuilder()
+    .setColor(DISCORD_COLORS.WARNING)
+    .setTitle('🗑️ Recording Deleted')
+    .setDescription('Your recording has been discarded and will not be uploaded.')
+    .setTimestamp();
+
+  await interaction.update({ 
+    embeds: [deleteEmbed],
+    components: []
+  });
+
+  console.log(`🗑️ Recording deleted by user ${interaction.user.tag}`);
+}
+
+// Handle modal submission - create session
+export async function handleSessionNameModal(interaction: ModalSubmitInteraction) {
+  const pending = pendingUploads.get(interaction.user.id);
+  
+  if (!pending) {
+    await interaction.reply({
+      content: '❌ No pending recording found. Please record again.',
+      ephemeral: true
+    });
+    return;
+  }
+
+  await interaction.deferUpdate();
+
+  const sessionName = interaction.fields.getTextInputValue('session_name');
+
+  try {
+    // Get user session for access token
+    const dbSession = await storage.getDiscordSession(interaction.user.id);
+    
+    if (!dbSession) {
+      throw new Error('Not authenticated. Please use /setup to login.');
+    }
+
+    const transcriptionUrl = pending.audioUrl.replace('.mp3', '.txt');
+    
+    await graphqlClient.createSession({
+      name: sessionName,
+      duration: pending.duration,
+      audioFile: pending.audioUrl,
+      transcriptionFile: transcriptionUrl,
+      transcriptionStatus: 'UPLOADED',
+      campaignSessionsId: pending.campaignId,
+      date: pending.startedAt,
+    }, dbSession.accessToken);
+
+    // Clean up the MP3 file
+    if (fs.existsSync(pending.mp3FilePath)) {
+      fs.unlinkSync(pending.mp3FilePath);
+    }
+
+    pendingUploads.delete(interaction.user.id);
+
+    const successEmbed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.SUCCESS)
+      .setTitle('✅ Session Uploaded Successfully')
+      .setDescription('Your recording is ready in TabletopScribe!')
+      .addFields(
+        { name: 'Session Name', value: sessionName, inline: false },
+        { name: 'Duration', value: `${Math.floor(pending.duration / 60)}m ${pending.duration % 60}s`, inline: true },
+        { name: 'Campaign', value: pending.campaignName, inline: true },
+        { name: 'File Size', value: `${pending.fileSizeMB} MB`, inline: true }
+      )
+      .setFooter({ text: 'Processing will continue automatically in TabletopScribe' })
+      .setTimestamp();
+
+    await interaction.editReply({
+      embeds: [successEmbed],
+      components: []
+    });
+
+    console.log(`✅ Session "${sessionName}" uploaded successfully by user ${interaction.user.tag}`);
+  } catch (error: any) {
+    console.error('Session creation error:', error);
+
+    const errorEmbed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.ERROR)
+      .setTitle('❌ Upload Failed')
+      .setDescription(error.message || 'Unable to create session')
+      .addFields(
+        { name: 'Troubleshooting', value: '• Try logging in again with `/setup`\n• Check that the campaign still exists\n• Contact support if the issue persists' }
+      )
+      .setTimestamp();
+
+    await interaction.editReply({
+      embeds: [errorEmbed],
+      components: []
+    });
   }
 }

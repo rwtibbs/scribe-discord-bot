@@ -91,7 +91,7 @@ class GraphQLClient {
     transcriptionFile: string;
     transcriptionStatus: string;
     campaignSessionsId: string;
-    date: string;
+    date: Date | string;
   }, accessToken?: string): Promise<{ id: string; _version: number }> {
     const mutation = `
       mutation CreateSession($input: CreateSessionInput!) {
@@ -110,8 +110,13 @@ class GraphQLClient {
       }
     `;
 
+    // Convert date to YYYY-MM-DD format (AWSDate format)
+    const dateObj = sessionData.date instanceof Date ? sessionData.date : new Date(sessionData.date);
+    const formattedDate = dateObj.toISOString().split('T')[0];
+
     const input = {
       ...sessionData,
+      date: formattedDate,
       purchaseStatus: 'NOTPURCHASED'
     };
 

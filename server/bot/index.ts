@@ -4,6 +4,7 @@ import * as setupCommand from './commands/setup';
 import * as campaignsCommand from './commands/campaigns';
 import * as recordCommand from './commands/record';
 import * as stopCommand from './commands/stop';
+import { handleSubmitButton, handleDeleteButton, handleSessionNameModal } from './commands/stop';
 
 const commands = [
   loginCommand,
@@ -42,26 +43,65 @@ export class DiscordBot {
     });
 
     this.client.on('interactionCreate', async interaction => {
-      if (!interaction.isChatInputCommand()) return;
+      // Handle slash commands
+      if (interaction.isChatInputCommand()) {
+        const command = this.commands.get(interaction.commandName);
 
-      const command = this.commands.get(interaction.commandName);
+        if (!command) {
+          console.error(`No command matching ${interaction.commandName} was found.`);
+          return;
+        }
 
-      if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-        return;
+        try {
+          await command.execute(interaction);
+        } catch (error) {
+          console.error(`Error executing ${interaction.commandName}:`, error);
+          
+          const errorMessage = 'There was an error while executing this command!';
+          
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, ephemeral: true });
+          } else {
+            await interaction.reply({ content: errorMessage, ephemeral: true });
+          }
+        }
       }
-
-      try {
-        await command.execute(interaction);
-      } catch (error) {
-        console.error(`Error executing ${interaction.commandName}:`, error);
-        
-        const errorMessage = 'There was an error while executing this command!';
-        
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ content: errorMessage, ephemeral: true });
-        } else {
-          await interaction.reply({ content: errorMessage, ephemeral: true });
+      
+      // Handle button interactions
+      if (interaction.isButton()) {
+        try {
+          if (interaction.customId === 'submit_recording') {
+            await handleSubmitButton(interaction);
+          } else if (interaction.customId === 'delete_recording') {
+            await handleDeleteButton(interaction);
+          }
+        } catch (error) {
+          console.error('Button interaction error:', error);
+          
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ 
+              content: 'There was an error processing your request!', 
+              ephemeral: true 
+            });
+          }
+        }
+      }
+      
+      // Handle modal submissions
+      if (interaction.isModalSubmit()) {
+        try {
+          if (interaction.customId === 'session_name_modal') {
+            await handleSessionNameModal(interaction);
+          }
+        } catch (error) {
+          console.error('Modal submission error:', error);
+          
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ 
+              content: 'There was an error processing your submission!', 
+              ephemeral: true 
+            });
+          }
         }
       }
     });
