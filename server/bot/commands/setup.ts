@@ -1,32 +1,45 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { DISCORD_COLORS } from '../types';
-import fetch from 'node-fetch';
+import { storage } from '../../storage';
+import { randomBytes } from 'crypto';
 
 export const data = new SlashCommandBuilder()
   .setName('setup')
   .setDescription('Get a secure link to configure your TabletopScribe account');
+
+function getBaseUrl(): string {
+  // Check for deployment URL first (Reserved VM, Autoscale, Static)
+  if (process.env.REPLIT_DEPLOYMENT_URL) {
+    return process.env.REPLIT_DEPLOYMENT_URL;
+  }
+  
+  // Fallback to dev domain (development environment)
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  
+  // Final fallback for local development
+  return 'http://localhost:5000';
+}
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ ephemeral: true });
 
   try {
     const discordUserId = interaction.user.id;
-    const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-      : 'http://localhost:5000';
+    const baseUrl = getBaseUrl();
     
-    // Generate secure setup token
-    const tokenResponse = await fetch(`${baseUrl}/api/auth/create-setup-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ discordUserId }),
+    // Generate cryptographically secure token
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    
+    // Store token directly in database
+    await storage.createSetupToken({
+      token,
+      discordUserId,
+      expiresAt,
     });
-
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to generate setup token');
-    }
-
-    const { token } = await tokenResponse.json() as { token: string };
+    
     const loginUrl = `${baseUrl}/login?token=${token}`;
 
     const embed = new EmbedBuilder()
