@@ -65,11 +65,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const member = interaction.member as GuildMember;
   const voiceChannel = member?.voice?.channel as VoiceChannel;
 
+  console.log(`Voice channel check - member: ${!!member}, voice: ${!!member?.voice}, channel: ${!!voiceChannel}`);
+
   if (!voiceChannel) {
+    console.log(`User ${interaction.user.tag} is not in a voice channel`);
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Not in Voice Channel')
-      .setDescription('You need to be in a voice channel to start recording')
+      .setDescription('You must join a voice channel before using the `/record` command.\n\nSteps:\n1. Join a voice channel in Discord\n2. Run `/record <campaign-name>` again')
       .setTimestamp();
 
     await interaction.editReply({ embeds: [errorEmbed] });
@@ -203,12 +206,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (error: any) {
     console.error('Record error:', error);
 
+    let troubleshootingSteps = '• Make sure you are in a voice channel before using /record\n• Ensure the bot has permission to join voice channels\n• Check that the campaign name is correct\n• Try logging in again with `/setup`';
+    
+    // Special handling for 401 errors
+    if (error.message?.includes('401')) {
+      troubleshootingSteps = '• **Join a voice channel first** - You must be in a voice channel to record\n• Try logging in again with `/setup` if the issue persists\n• Check that your TabletopScribe credentials are still valid';
+    }
+
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Recording Failed')
       .setDescription(error.message || 'Unable to start recording')
       .addFields(
-        { name: 'Troubleshooting', value: '• Ensure the bot has permission to join voice channels\n• Check that the campaign name is correct\n• Try again in a moment' }
+        { name: 'Troubleshooting', value: troubleshootingSteps }
       )
       .setTimestamp();
 
