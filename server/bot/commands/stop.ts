@@ -12,7 +12,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { createRequire } from 'module';
 
+const require = createRequire(import.meta.url);
 const execAsync = promisify(exec);
 
 export const data = new SlashCommandBuilder()
