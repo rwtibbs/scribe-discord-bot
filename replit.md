@@ -4,7 +4,7 @@ A Discord bot that allows authenticated TabletopScribe users to record voice cha
 
 ## Overview
 
-This bot integrates with your existing TabletopScribe infrastructure (AWS Cognito, S3, AppSync GraphQL) to provide seamless voice recording capabilities from Discord.
+This bot integrates with your existing TabletopScribe infrastructure (AWS Cognito, S3, AppSync GraphQL) to provide seamless voice recording capabilities from Discord. Features secure web-based authentication where users authenticate via a browser (instead of typing credentials in Discord) and can copy campaign-specific commands to clipboard.
 
 ## Project Structure
 
@@ -12,39 +12,46 @@ This bot integrates with your existing TabletopScribe infrastructure (AWS Cognit
 server/
   ├── bot/                      # Discord bot implementation
   │   ├── commands/            # Slash command handlers
-  │   │   ├── login.ts        # /login command
+  │   │   ├── setup.ts        # /setup command - generates secure setup link
   │   │   ├── campaigns.ts    # /campaigns command
   │   │   ├── record.ts       # /record command
   │   │   └── stop.ts         # /stop command
   │   ├── types.ts            # TypeScript interfaces
-  │   ├── session-manager.ts  # In-memory session storage
+  │   ├── session-manager.ts  # Recording session tracking
   │   └── index.ts            # Bot initialization
   ├── lib/                     # AWS integration layer
   │   ├── aws-config.ts       # Multi-environment AWS config
   │   ├── auth.ts             # Cognito authentication
   │   ├── graphql.ts          # AppSync GraphQL client
   │   └── s3-upload.ts        # S3 upload helper
+  ├── storage.ts              # Database storage interface
+  ├── routes.ts               # Express API routes
   └── index.ts                # Server entry point
 client/
   └── src/
       └── pages/
-          └── home.tsx         # Status/info page
+          ├── home.tsx         # Status/info page
+          ├── login.tsx        # Web-based login form
+          └── campaigns.tsx    # Campaign list with clipboard copy
+shared/
+  └── schema.ts               # Database schema (discord_sessions, setup_tokens)
 ```
 
 ## Features
 
-- **Authentication**: Users authenticate with their TabletopScribe AWS Cognito credentials
-- **Campaign Management**: Fetch and display user's campaigns via GraphQL
+- **Secure Web Authentication**: Users authenticate via browser using cryptographically secure, time-limited setup tokens
+- **Persistent Sessions**: PostgreSQL database stores user credentials across bot restarts
+- **Campaign Selection UI**: Web interface displays campaigns with clipboard copy for /record commands
 - **Voice Recording**: Join Discord voice channels and record audio
 - **Auto-Upload**: Convert recordings to MP3 and upload to S3
-- **Session Creation**: Automatically create sessions in TabletopScribe via GraphQL
+- **Session Creation**: Automatically create sessions in TabletopScribe via GraphQL using Cognito sub
 - **Multi-Environment**: Support for DEV and DEVSORT environments
 
 ## Discord Commands
 
-- `/login <username> <password>` - Authenticate with TabletopScribe
-- `/campaigns` - List your campaigns
-- `/record <campaign-name>` - Start recording in current voice channel
+- `/setup` - Generate secure link for web-based authentication (15-minute expiry, single-use)
+- `/campaigns` - List your campaigns (requires prior /setup authentication)
+- `/record <campaign-name>` - Start recording in current voice channel (requires authentication)
 - `/stop` - Stop recording and upload to TabletopScribe
 
 ## Environment Variables
@@ -71,19 +78,33 @@ Optional environment variables:
 
 ## Workflow
 
-1. User authenticates with `/login` command
-2. Bot stores their Cognito access token in memory
-3. User joins a voice channel and types `/record "Campaign Name"`
-4. Bot joins channel and starts recording audio
-5. User types `/stop` when finished
-6. Bot:
+### Initial Setup (One-Time Authentication)
+1. User types `/setup` command in Discord
+2. Bot generates cryptographically secure token (32 bytes, 15-minute expiry)
+3. Bot stores token in database and sends private link to user
+4. User clicks link and is directed to web-based login page
+5. Login page validates token (not expired, not previously used)
+6. User enters TabletopScribe credentials
+7. Backend authenticates with AWS Cognito
+8. Backend stores session in database: {discordUserId, accessToken, username, cognitoSub}
+9. Token is marked as used (prevents reuse/account hijacking)
+10. User redirected to campaigns page showing their campaigns
+11. User clicks "Copy Command" button for desired campaign
+12. User pastes `/record "Campaign Name"` command into Discord
+
+### Recording Workflow
+1. User joins a voice channel and pastes `/record "Campaign Name"` (from campaigns page)
+2. Bot looks up stored credentials from database using Discord user ID
+3. Bot joins channel and starts recording audio
+4. User types `/stop` when finished
+5. Bot:
    - Saves recording to temporary file
    - Converts PCM to MP3
-   - Creates session in GraphQL
+   - Creates session in GraphQL using stored Cognito sub
    - Uploads audio to S3
    - Updates session with audio URL
    - Sends confirmation message
-7. TabletopScribe's existing Lambda processing takes over
+6. TabletopScribe's existing Lambda processing takes over
 
 ## Recording Process
 
@@ -95,10 +116,31 @@ Optional environment variables:
 
 ## Session Management
 
-- User sessions stored in-memory with access tokens
-- Recording sessions track active recordings
-- Sessions cleared when user logs out or bot restarts
-- For production: Consider Redis or database for persistent storage
+### Authentication Sessions (PostgreSQL)
+- User credentials stored persistently in `discord_sessions` table
+- Each session contains: Discord user ID, Cognito access token, username, and Cognito sub
+- Sessions survive bot restarts
+- Used for all GraphQL API calls (campaigns, session creation)
+
+### Setup Tokens (PostgreSQL)
+- Stored in `setup_tokens` table with 15-minute expiration
+- Cryptographically random (32 bytes from crypto.randomBytes)
+- Single-use enforcement: marked as used after successful login
+- Expired or used tokens rejected to prevent security vulnerabilities
+
+### Recording Sessions (In-Memory)
+- Active recording state tracked in memory via session-manager
+- Includes audio stream, campaign info, and start time
+- Cleared after `/stop` command completes upload
+
+## Security Features
+
+- **Cryptographic Tokens**: Setup tokens use Node.js crypto.randomBytes (32 bytes = 256 bits of entropy)
+- **Time-Limited Access**: Setup tokens expire after 15 minutes
+- **Single-Use Tokens**: Tokens marked as used after login, preventing reuse and account hijacking
+- **No Credentials in Discord**: Users never type passwords in Discord chat
+- **Cognito Sub Usage**: All GraphQL calls use Cognito sub (user ID) instead of username for proper authentication
+- **Database Validation**: Every request validates session existence and token status
 
 ## Notes
 
@@ -106,3 +148,4 @@ Optional environment variables:
 - Recordings are stored temporarily and deleted after upload
 - Audio quality: 48kHz, 2 channels, MP3 192kbps
 - Maximum recording duration: Limited by Discord/system resources
+- Setup tokens automatically cleaned up when expired (consider scheduled cleanup task for production)
