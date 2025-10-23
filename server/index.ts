@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { DiscordBot } from "./bot";
+// @ts-ignore - no types available for libsodium-wrappers
+import sodium from "libsodium-wrappers";
 
 const app = express();
 
@@ -66,6 +68,11 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+
+  // Initialize libsodium for Discord voice encryption
+  console.log('🔐 Initializing voice encryption...');
+  await sodium.ready;
+  console.log('✅ Voice encryption ready');
 
   // Start Discord Bot
   console.log('🚀 Starting TabletopScribe Discord Bot...');
