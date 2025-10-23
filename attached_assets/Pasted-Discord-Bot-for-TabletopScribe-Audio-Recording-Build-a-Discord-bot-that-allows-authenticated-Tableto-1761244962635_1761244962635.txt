@@ -1,0 +1,354 @@
+Discord Bot for TabletopScribe Audio Recording
+Build a Discord bot that allows authenticated TabletopScribe users to record voice channel audio directly in Discord, then automatically upload it to TabletopScribe for processing.
+
+Project Requirements
+Core Functionality
+Discord Voice Recording: Bot joins voice channels and records audio when summoned by authenticated users
+User Authentication: Authenticate Discord users with their TabletopScribe AWS Cognito credentials
+Campaign Selection: Allow users to specify which campaign the recording belongs to
+Auto-Upload: After recording completes, upload the audio file to S3 and create a session in TabletopScribe
+Status Updates: Provide real-time feedback in Discord during recording and uploading
+Technology Stack
+Runtime: Node.js with TypeScript
+Discord Library: discord.js for bot functionality
+Audio Recording: @discordjs/voice for recording voice channels
+AWS Integration:
+Cognito for authentication (reuse existing user pool)
+S3 for audio file storage (reuse existing bucket)
+AppSync GraphQL for session creation
+AWS Configuration (Reuse from TabletopScribe)
+Environment Variables to Set
+# AWS General
+AWS_REGION=us-east-2
+# Production Environment (DEV)
+USER_POOL_ID_DEV=us-east-2_2sxvJnReu
+USER_POOL_CLIENT_ID_DEV=[your client ID]
+S3_BUCKET_DEV=scribe8a8fcf3f6cb14734bce4bd48352f8043195641-dev
+GRAPHQL_ENDPOINT_DEV=https://lm5nq7s75raxnd24y67v3civhm.appsync-api.us-east-2.amazonaws.com/graphql
+APPSYNC_API_KEY=[your API key]
+# Development Environment (DEVSORT) - Optional
+USER_POOL_ID_DEVSORT=us-east-2_N5trdtp4e
+USER_POOL_CLIENT_ID_DEVSORT=kpk9rjugfg5997ann3v40s7hs
+S3_BUCKET_DEVSORT=scribe8a8fcf3f6cb14734bce4bd48352f8043acdd4-devsort
+GRAPHQL_ENDPOINT_DEVSORT=https://bbypecanqjgyblz7ikrrk46rbe.appsync-api.us-east-2.amazonaws.com/graphql
+# Discord Bot
+DISCORD_BOT_TOKEN=[your Discord bot token]
+DISCORD_CLIENT_ID=[your Discord application client ID]
+# AWS Credentials (for S3 uploads)
+AWS_ACCESS_KEY_ID=[your AWS access key]
+AWS_SECRET_ACCESS_KEY=[your AWS secret key]
+# Environment Selection (defaults to DEV if not set)
+AWS_ENVIRONMENT=DEV
+Reusable Code from TabletopScribe
+1. AWS Configuration Helper (src/lib/aws-config.ts)
+export interface AWSConfig {
+  region: string;
+  userPoolId: string;
+  userPoolClientId: string;
+  s3Bucket: string;
+  appsyncApiKey: string;
+  graphqlEndpoint: string;
+}
+type Environment = 'DEV' | 'DEVSORT';
+export const getEnvironment = (): Environment => {
+  const env = process.env.AWS_ENVIRONMENT as Environment;
+  return env === 'DEVSORT' ? 'DEVSORT' : 'DEV';
+};
+const environmentConfigs: Record<Environment, AWSConfig> = {
+  DEV: {
+    region: process.env.AWS_REGION || 'us-east-2',
+    userPoolId: process.env.USER_POOL_ID_DEV || 'us-east-2_2sxvJnReu',
+    userPoolClientId: process.env.USER_POOL_CLIENT_ID_DEV || '',
+    s3Bucket: process.env.S3_BUCKET_DEV || 'scribe8a8fcf3f6cb14734bce4bd48352f8043195641-dev',
+    appsyncApiKey: process.env.APPSYNC_API_KEY || '',
+    graphqlEndpoint: process.env.GRAPHQL_ENDPOINT_DEV || 'https://lm5nq7s75raxnd24y67v3civhm.appsync-api.us-east-2.amazonaws.com/graphql',
+  },
+  DEVSORT: {
+    region: process.env.AWS_REGION || 'us-east-2',
+    userPoolId: process.env.USER_POOL_ID_DEVSORT || 'us-east-2_N5trdtp4e',
+    userPoolClientId: process.env.USER_POOL_CLIENT_ID_DEVSORT || 'kpk9rjugfg5997ann3v40s7hs',
+    s3Bucket: process.env.S3_BUCKET_DEVSORT || 'scribe8a8fcf3f6cb14734bce4bd48352f8043acdd4-devsort',
+    appsyncApiKey: process.env.APPSYNC_API_KEY || '',
+    graphqlEndpoint: process.env.GRAPHQL_ENDPOINT_DEVSORT || 'https://bbypecanqjgyblz7ikrrk46rbe.appsync-api.us-east-2.amazonaws.com/graphql',
+  },
+};
+export const getAwsConfig = (): AWSConfig => {
+  const currentEnv = getEnvironment();
+  return environmentConfigs[currentEnv];
+};
+2. Cognito Authentication (src/lib/auth.ts)
+import { CognitoUserPool, CognitoUser, AuthenticationDetails, CognitoUserSession } from 'amazon-cognito-identity-js';
+import { getAwsConfig } from './aws-config';
+export interface AuthUser {
+  username: string;
+  sub: string;
+  accessToken: string;
+}
+const getUserPool = () => {
+  const config = getAwsConfig();
+  return new CognitoUserPool({
+    UserPoolId: config.userPoolId,
+    ClientId: config.userPoolClientId,
+  });
+};
+export class AuthService {
+  static async signIn(username: string, password: string): Promise<AuthUser> {
+    return new Promise((resolve, reject) => {
+      const authenticationDetails = new AuthenticationDetails({
+        Username: username,
+        Password: password,
+      });
+      const cognitoUser = new CognitoUser({
+        Username: username,
+        Pool: getUserPool(),
+      });
+      cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: (result) => {
+          const accessToken = result.getAccessToken().getJwtToken();
+          const payload = result.getAccessToken().payload;
+          
+          console.log('✅ Authentication successful');
+          resolve({
+            username,
+            sub: payload.sub,
+            accessToken,
+          });
+        },
+        onFailure: (err) => {
+          console.error('❌ Authentication failed:', err);
+          reject(new Error(err.message || 'Authentication failed'));
+        },
+      });
+    });
+  }
+  static async refreshSession(cognitoUser: CognitoUser): Promise<string> {
+    return new Promise((resolve, reject) => {
+      cognitoUser.getSession((err: any, session: CognitoUserSession) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        if (!session.isValid()) {
+          reject(new Error('Session expired'));
+          return;
+        }
+        resolve(session.getAccessToken().getJwtToken());
+      });
+    });
+  }
+}
+3. GraphQL Client (src/lib/graphql.ts)
+import { getAwsConfig, getEnvironment } from './aws-config';
+export interface Campaign {
+  id: string;
+  name: string;
+  description?: string;
+  owner: string;
+}
+class GraphQLClient {
+  private endpoint: string;
+  private apiKey: string;
+  constructor() {
+    const config = getAwsConfig();
+    this.endpoint = config.graphqlEndpoint;
+    this.apiKey = config.appsyncApiKey;
+    
+    const environment = getEnvironment();
+    console.log(`🔧 GraphQL Client configured for ${environment} environment`);
+  }
+  async query<T = any>(query: string, variables?: Record<string, any>, accessToken?: string): Promise<T> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    } else {
+      headers['x-api-key'] = this.apiKey;
+    }
+    
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed: ${response.status}`);
+    }
+    const result = await response.json();
+    if (result.errors && result.errors.length > 0) {
+      throw new Error(result.errors[0].message);
+    }
+    return result.data;
+  }
+  async getCampaignsByOwner(owner: string, accessToken?: string): Promise<Campaign[]> {
+    const query = `
+      query GetCampaignsByOwner($owner: String!) {
+        listCampaigns(
+          filter: { 
+            or: [
+              { owner: { eq: $owner } },
+              { owner: { contains: $owner } }
+            ]
+          }
+          limit: 100
+        ) {
+          items {
+            id
+            name
+            description
+            owner
+            _deleted
+          }
+        }
+      }
+    `;
+    const result = await this.query<{ listCampaigns: { items: Campaign[] } }>(
+      query, 
+      { owner }, 
+      accessToken
+    );
+    
+    return result.listCampaigns.items.filter(campaign => !campaign._deleted);
+  }
+  async createSession(sessionData: {
+    name: string;
+    duration: number;
+    audioFile: string;
+    transcriptionFile: string;
+    transcriptionStatus: string;
+    campaignSessionsId: string;
+    date: string;
+  }, accessToken?: string): Promise<{ id: string; _version: number }> {
+    const mutation = `
+      mutation CreateSession($input: CreateSessionInput!) {
+        createSession(input: $input) {
+          id
+          name
+          duration
+          audioFile
+          transcriptionFile
+          transcriptionStatus
+          purchaseStatus
+          campaignSessionsId
+          date
+          _version
+        }
+      }
+    `;
+    const input = {
+      ...sessionData,
+      purchaseStatus: 'NOTPURCHASED'
+    };
+    const result = await this.query<{ createSession: { id: string; _version: number } }>(
+      mutation,
+      { input },
+      accessToken
+    );
+    return result.createSession;
+  }
+  async updateSessionAudioFile(
+    sessionId: string, 
+    audioFile: string, 
+    transcriptionFile: string, 
+    version: number, 
+    accessToken?: string
+  ): Promise<void> {
+    const mutation = `
+      mutation UpdateSession($input: UpdateSessionInput!) {
+        updateSession(input: $input) {
+          id
+          audioFile
+          transcriptionFile
+          transcriptionStatus
+        }
+      }
+    `;
+    await this.query(mutation, {
+      input: {
+        id: sessionId,
+        audioFile,
+        transcriptionFile,
+        transcriptionStatus: "UPLOADED",
+        _version: version,
+      }
+    }, accessToken);
+  }
+}
+export const graphqlClient = new GraphQLClient();
+4. S3 Upload Helper (src/lib/s3-upload.ts)
+import AWS from 'aws-sdk';
+import { getAwsConfig } from './aws-config';
+import * as fs from 'fs';
+import * as path from 'path';
+const config = getAwsConfig();
+const s3 = new AWS.S3({
+  region: config.region,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  signatureVersion: 'v4',
+});
+export async function uploadAudioToS3(
+  localFilePath: string,
+  fileName: string
+): Promise<string> {
+  const fileContent = fs.readFileSync(localFilePath);
+  const key = `public/audioUploads/${fileName}`;
+  console.log(`📤 Uploading ${fileName} to S3...`);
+  const params = {
+    Bucket: config.s3Bucket,
+    Key: key,
+    Body: fileContent,
+    ContentType: 'audio/mpeg',
+  };
+  await s3.upload(params).promise();
+  
+  const s3Url = `https://${config.s3Bucket}.s3.${config.region}.amazonaws.com/${key}`;
+  console.log(`✅ Upload complete: ${s3Url}`);
+  
+  return s3Url;
+}
+Bot Architecture
+Discord Commands
+/login <username> <password> - Authenticate with TabletopScribe
+/campaigns - List your campaigns
+/record <campaign-name> - Start recording in current voice channel
+/stop - Stop recording and upload to TabletopScribe
+/status - Check recording/upload status
+Workflow
+User authenticates with /login command
+Bot stores their Cognito access token (in memory or Redis)
+User joins a voice channel and types /record "Campaign Name"
+Bot joins channel, starts recording audio
+User types /stop when finished
+Bot:
+Saves recording to temporary file
+Creates session in GraphQL (NOTSTARTED status)
+Uploads audio to S3
+Updates session with audio URL (UPLOADED status)
+Sends confirmation message with session link
+TabletopScribe's existing Lambda processing takes over
+Implementation Steps
+Set up Discord bot application and get bot token
+Install dependencies: discord.js, @discordjs/voice, amazon-cognito-identity-js, aws-sdk, typescript
+Copy the 4 reusable code files above
+Implement Discord command handlers
+Implement voice recording logic
+Test authentication flow
+Test end-to-end recording and upload
+Security Considerations
+Store user tokens securely (use Redis or encrypted storage for production)
+Implement token refresh logic
+Validate user permissions before allowing recording
+Rate limit commands to prevent abuse
+Only allow recording in authorized servers/channels
+Testing Checklist
+✅ Bot connects to Discord successfully
+✅ User can authenticate with Cognito credentials
+✅ Bot can fetch user's campaigns via GraphQL
+✅ Bot joins voice channel and records audio
+✅ Audio file uploads to correct S3 bucket
+✅ Session creates successfully in GraphQL
+✅ Session appears in TabletopScribe web app
+✅ Processing pipeline triggers automatically
