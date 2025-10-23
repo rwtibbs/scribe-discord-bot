@@ -1,7 +1,7 @@
-import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, users, discordSessions } from "@shared/schema";
+import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, type SetupToken, type InsertSetupToken, users, discordSessions, setupTokens } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-serverless";
-import { eq } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import { Pool } from "@neondatabase/serverless";
 
 export interface IStorage {
@@ -13,15 +13,22 @@ export interface IStorage {
   getDiscordSession(discordUserId: string): Promise<DiscordSession | undefined>;
   upsertDiscordSession(session: InsertDiscordSession): Promise<DiscordSession>;
   deleteDiscordSession(discordUserId: string): Promise<void>;
+  
+  // Setup token methods
+  createSetupToken(token: InsertSetupToken): Promise<SetupToken>;
+  getSetupToken(token: string): Promise<SetupToken | undefined>;
+  markTokenUsed(token: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private discordSessions: Map<string, DiscordSession>;
+  private setupTokens: Map<string, SetupToken>;
 
   constructor() {
     this.users = new Map();
     this.discordSessions = new Map();
+    this.setupTokens = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -56,6 +63,32 @@ export class MemStorage implements IStorage {
 
   async deleteDiscordSession(discordUserId: string): Promise<void> {
     this.discordSessions.delete(discordUserId);
+  }
+
+  async createSetupToken(insertToken: InsertSetupToken): Promise<SetupToken> {
+    const token: SetupToken = {
+      ...insertToken,
+      used: null,
+    };
+    this.setupTokens.set(insertToken.token, token);
+    return token;
+  }
+
+  async getSetupToken(token: string): Promise<SetupToken | undefined> {
+    const setupToken = this.setupTokens.get(token);
+    // Reject tokens that have been used
+    if (setupToken && setupToken.used) {
+      return undefined;
+    }
+    return setupToken;
+  }
+
+  async markTokenUsed(token: string): Promise<void> {
+    const setupToken = this.setupTokens.get(token);
+    if (setupToken) {
+      setupToken.used = new Date();
+      this.setupTokens.set(token, setupToken);
+    }
   }
 }
 
@@ -103,6 +136,7 @@ export class DbStorage implements IStorage {
         set: {
           accessToken: session.accessToken,
           username: session.username,
+          sub: session.sub,
           updatedAt: new Date(),
         },
       })
@@ -112,6 +146,36 @@ export class DbStorage implements IStorage {
 
   async deleteDiscordSession(discordUserId: string): Promise<void> {
     await this.db.delete(discordSessions).where(eq(discordSessions.discordUserId, discordUserId));
+  }
+
+  async createSetupToken(insertToken: InsertSetupToken): Promise<SetupToken> {
+    const result = await this.db.insert(setupTokens).values(insertToken).returning();
+    return result[0];
+  }
+
+  async getSetupToken(token: string): Promise<SetupToken | undefined> {
+    const result = await this.db
+      .select()
+      .from(setupTokens)
+      .where(and(
+        eq(setupTokens.token, token),
+        gt(setupTokens.expiresAt, new Date())
+      ))
+      .limit(1);
+    
+    const setupToken = result[0];
+    // Reject tokens that have been used
+    if (setupToken && setupToken.used) {
+      return undefined;
+    }
+    return setupToken;
+  }
+
+  async markTokenUsed(token: string): Promise<void> {
+    await this.db
+      .update(setupTokens)
+      .set({ used: new Date() })
+      .where(eq(setupTokens.token, token));
   }
 }
 

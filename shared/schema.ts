@@ -21,7 +21,15 @@ export const discordSessions = pgTable("discord_sessions", {
   discordUserId: text("discord_user_id").primaryKey(),
   accessToken: text("access_token").notNull(),
   username: text("username").notNull(),
+  sub: text("sub").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const setupTokens = pgTable("setup_tokens", {
+  token: text("token").primaryKey(),
+  discordUserId: text("discord_user_id").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: timestamp("used"),
 });
 
 export const insertDiscordSessionSchema = createInsertSchema(discordSessions).omit({
@@ -30,3 +38,10 @@ export const insertDiscordSessionSchema = createInsertSchema(discordSessions).om
 
 export type InsertDiscordSession = z.infer<typeof insertDiscordSessionSchema>;
 export type DiscordSession = typeof discordSessions.$inferSelect;
+
+export const insertSetupTokenSchema = createInsertSchema(setupTokens).omit({
+  used: true,
+});
+
+export type InsertSetupToken = z.infer<typeof insertSetupTokenSchema>;
+export type SetupToken = typeof setupTokens.$inferSelect;

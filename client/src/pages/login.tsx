@@ -16,15 +16,15 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   
-  const discordUserId = new URLSearchParams(window.location.search).get("userId");
+  const token = new URLSearchParams(window.location.search).get("token");
 
-  if (!discordUserId) {
+  if (!token) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Invalid access link. Please use the link provided by the Discord bot.
+            Invalid or missing setup token. Please use the /setup command in Discord to get a new link.
           </AlertDescription>
         </Alert>
       </div>
@@ -43,7 +43,7 @@ export default function Login() {
         body: JSON.stringify({
           username,
           password,
-          discordUserId,
+          token,
         }),
       });
 
@@ -58,7 +58,8 @@ export default function Login() {
         description: `Welcome back, ${username}!`,
       });
 
-      navigate(`/campaigns?userId=${discordUserId}`);
+      // Use discordUserId from response for campaigns page
+      navigate(`/campaigns?userId=${data.discordUserId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {

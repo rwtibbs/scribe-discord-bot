@@ -80,7 +80,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     const campaigns = await graphqlClient.getCampaignsByOwner(
-      dbSession.username,
+      dbSession.sub,
       dbSession.accessToken
     );
 

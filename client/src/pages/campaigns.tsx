@@ -16,20 +16,28 @@ interface Campaign {
 export default function Campaigns() {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const discordUserId = new URLSearchParams(window.location.search).get("userId");
+  const userId = new URLSearchParams(window.location.search).get("userId");
 
-  const { data: campaigns, isLoading, error } = useQuery<Campaign[]>({
-    queryKey: ["/api/campaigns", discordUserId],
-    enabled: !!discordUserId,
+  const { data: campaigns, isLoading, error} = useQuery<Campaign[]>({
+    queryKey: ["/api/campaigns", userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/campaigns?userId=${userId}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch campaigns');
+      }
+      return response.json();
+    },
+    enabled: !!userId,
   });
 
-  if (!discordUserId) {
+  if (!userId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Invalid access link. Please use the link provided by the Discord bot.
+            Please login first using the /setup command in Discord.
           </AlertDescription>
         </Alert>
       </div>
