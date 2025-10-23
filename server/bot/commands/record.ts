@@ -122,15 +122,27 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       selfMute: true,
     });
 
-    console.log('Voice connection created, waiting for ready state...');
+    // Log connection state changes for debugging
+    connection.on('stateChange', (oldState, newState) => {
+      console.log(`Voice connection state: ${oldState.status} -> ${newState.status}`);
+    });
+
+    connection.on('error', (error) => {
+      console.error('Voice connection error:', error);
+    });
+
+    console.log(`Voice connection created with initial state: ${connection.state.status}`);
+    console.log('Waiting for ready state...');
 
     try {
-      await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
-      console.log('Voice connection ready');
+      await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+      console.log('✅ Voice connection ready!');
     } catch (connectionError: any) {
-      console.error('Voice connection failed:', connectionError);
+      console.error('❌ Voice connection failed after timeout');
+      console.error(`Final state: ${connection.state.status}`);
+      console.error('Error:', connectionError);
       connection.destroy();
-      throw new Error('Failed to connect to voice channel. The bot may need to be re-invited with proper permissions.');
+      throw new Error('Unable to establish voice connection. This may be a hosting environment limitation with UDP voice traffic.');
     }
 
     const receiver = connection.receiver;
