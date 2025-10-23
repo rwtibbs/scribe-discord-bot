@@ -2,8 +2,11 @@ import { type User, type InsertUser, type DiscordSession, type InsertDiscordSess
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq, and, gt } from "drizzle-orm";
-import { Pool } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
+
+// Configure WebSocket for Neon serverless driver in Node.js
+neonConfig.webSocketConstructor = ws;
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -98,9 +101,7 @@ export class DbStorage implements IStorage {
 
   constructor() {
     const pool = new Pool({ 
-      connectionString: process.env.DATABASE_URL,
-      // @ts-ignore - ws types not fully compatible
-      webSocketConstructor: ws
+      connectionString: process.env.DATABASE_URL
     });
     this.db = drizzle(pool);
   }
