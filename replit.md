@@ -54,6 +54,27 @@ shared/
 - `/record <campaign-name>` - Start recording in current voice channel (requires authentication)
 - `/stop` - Stop recording and upload to TabletopScribe
 
+## Discord Bot Setup
+
+### Required OAuth2 Permissions
+
+The bot must be invited to your Discord server with these permissions:
+- **Connect** (1048576) - Join voice channels
+- **Speak** (2097152) - Transmit audio (required for voice connection)
+- **View Channels** - See channels
+- **Send Messages** - Respond to commands
+
+**Bot Invite URL Format:**
+```
+https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=3146752&scope=bot%20applications.commands
+```
+
+Replace `YOUR_CLIENT_ID` with your Discord bot's client ID from the environment variables.
+
+**Permission Value: 3146752** (Connect + Speak + basic permissions)
+
+⚠️ **Important**: If you're getting "operation was aborted" errors when trying to record, the bot likely needs to be re-invited with the correct permissions using the URL above.
+
 ## Environment Variables
 
 Required secrets (configured in Replit Secrets):

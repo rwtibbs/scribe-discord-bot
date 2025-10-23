@@ -76,6 +76,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
+  // Check bot permissions
+  const permissions = voiceChannel.permissionsFor(interaction.guild!.members.me!);
+  if (!permissions?.has(['Connect', 'Speak'])) {
+    const errorEmbed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.ERROR)
+      .setTitle('❌ Missing Permissions')
+      .setDescription('The bot needs "Connect" and "Speak" permissions in this voice channel')
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [errorEmbed] });
+    return;
+  }
+
   const campaignName = interaction.options.getString('campaign', true);
 
   try {
@@ -99,6 +112,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       return;
     }
 
+    console.log(`Attempting to join voice channel: ${voiceChannel.name} (${voiceChannel.id})`);
+    
     const connection = joinVoiceChannel({
       channelId: voiceChannel.id,
       guildId: voiceChannel.guild.id,
@@ -107,7 +122,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       selfMute: true,
     });
 
-    await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+    console.log('Voice connection created, waiting for ready state...');
+
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+      console.log('Voice connection ready');
+    } catch (connectionError: any) {
+      console.error('Voice connection failed:', connectionError);
+      connection.destroy();
+      throw new Error('Failed to connect to voice channel. The bot may need to be re-invited with proper permissions.');
+    }
 
     const receiver = connection.receiver;
 
