@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { graphqlClient } from '../../lib/graphql';
-import { sessionManager } from '../session-manager';
+import { storage } from '../../storage';
 import { DISCORD_COLORS } from '../types';
 import { getEnvironment } from '../../lib/aws-config';
 
@@ -11,13 +11,14 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
 
-  const userSession = sessionManager.getUserSession(interaction.user.id);
+  // Get session from database
+  const dbSession = await storage.getDiscordSession(interaction.user.id);
 
-  if (!userSession) {
+  if (!dbSession) {
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Not Authenticated')
-      .setDescription('Please login first using `/login` command')
+      .setDescription('Please use `/setup` to login with your TabletopScribe account')
       .setTimestamp();
 
     await interaction.editReply({ embeds: [errorEmbed] });
@@ -26,8 +27,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     const campaigns = await graphqlClient.getCampaignsByOwner(
-      userSession.sub,
-      userSession.accessToken
+      dbSession.username,
+      dbSession.accessToken
     );
 
     if (campaigns.length === 0) {
@@ -64,7 +65,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTitle('❌ Failed to Load Campaigns')
       .setDescription(error.message || 'Unable to fetch your campaigns')
       .addFields(
-        { name: 'Troubleshooting', value: '• Check your network connection\n• Try logging in again with `/login`\n• Contact support if the issue persists' }
+        { name: 'Troubleshooting', value: '• Check your network connection\n• Try logging in again with `/setup`\n• Contact support if the issue persists' }
       )
       .setTimestamp();
 

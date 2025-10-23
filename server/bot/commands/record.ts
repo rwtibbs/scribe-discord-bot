@@ -17,6 +17,7 @@ import { promisify } from 'util';
 import * as prism from 'prism-media';
 import { graphqlClient } from '../../lib/graphql';
 import { sessionManager } from '../session-manager';
+import { storage } from '../../storage';
 import { DISCORD_COLORS } from '../types';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -36,13 +37,14 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
 
-  const userSession = sessionManager.getUserSession(interaction.user.id);
+  // Get session from database
+  const dbSession = await storage.getDiscordSession(interaction.user.id);
 
-  if (!userSession) {
+  if (!dbSession) {
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Not Authenticated')
-      .setDescription('Please login first using `/login` command')
+      .setDescription('Please use `/setup` to login with your TabletopScribe account')
       .setTimestamp();
 
     await interaction.editReply({ embeds: [errorEmbed] });
@@ -78,8 +80,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     const campaigns = await graphqlClient.getCampaignsByOwner(
-      userSession.sub,
-      userSession.accessToken
+      dbSession.username,
+      dbSession.accessToken
     );
 
     const campaign = campaigns.find(

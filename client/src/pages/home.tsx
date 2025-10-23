@@ -35,7 +35,7 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-foreground">Authenticate</h3>
                 <p className="text-sm text-muted-foreground">
-                  Use <code className="bg-muted px-1 rounded">/login</code> to connect your TabletopScribe account
+                  Use <code className="bg-muted px-1 rounded">/setup</code> to securely connect your TabletopScribe account
                 </p>
               </div>
             </div>
@@ -47,7 +47,7 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-foreground">Select Campaign</h3>
                 <p className="text-sm text-muted-foreground">
-                  View your campaigns with <code className="bg-muted px-1 rounded">/campaigns</code>
+                  Login securely in your browser, then click a campaign to copy the record command
                 </p>
               </div>
             </div>
@@ -59,7 +59,7 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-foreground">Start Recording</h3>
                 <p className="text-sm text-muted-foreground">
-                  Join a voice channel and use <code className="bg-muted px-1 rounded">/record [campaign-name]</code>
+                  Join a voice channel and paste your campaign's record command
                 </p>
               </div>
             </div>
@@ -84,8 +84,8 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
-              <code className="text-sm">/login &lt;username&gt; &lt;password&gt;</code>
-              <span className="text-sm text-muted-foreground">Authenticate with TabletopScribe</span>
+              <code className="text-sm">/setup</code>
+              <span className="text-sm text-muted-foreground">Get secure login link</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
               <code className="text-sm">/campaigns</code>
@@ -98,6 +98,10 @@ export default function Home() {
             <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
               <code className="text-sm">/stop</code>
               <span className="text-sm text-muted-foreground">Stop recording and upload</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/50 rounded-md">
+              <code className="text-sm">/login &lt;username&gt; &lt;password&gt;</code>
+              <span className="text-sm text-muted-foreground">Legacy - use /setup instead</span>
             </div>
           </CardContent>
         </Card>

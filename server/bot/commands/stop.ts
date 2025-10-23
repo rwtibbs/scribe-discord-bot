@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { sessionManager } from '../session-manager';
+import { storage } from '../../storage';
 import { uploadAudioToS3 } from '../../lib/s3-upload';
 import { graphqlClient } from '../../lib/graphql';
 import { DISCORD_COLORS } from '../types';
@@ -32,13 +33,14 @@ async function convertPcmToMp3(pcmPath: string, mp3Path: string): Promise<void> 
 export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
 
-  const userSession = sessionManager.getUserSession(interaction.user.id);
+  // Get session from database
+  const dbSession = await storage.getDiscordSession(interaction.user.id);
 
-  if (!userSession) {
+  if (!dbSession) {
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Not Authenticated')
-      .setDescription('Please login first using `/login` command')
+      .setDescription('Please use `/setup` to login with your TabletopScribe account')
       .setTimestamp();
 
     await interaction.editReply({ embeds: [errorEmbed] });
@@ -121,7 +123,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       transcriptionStatus: 'UPLOADED',
       campaignSessionsId: recordingSession.campaignId,
       date: recordingSession.startedAt.toISOString(),
-    }, userSession.accessToken);
+    }, dbSession.accessToken);
 
     fs.unlinkSync(mp3FilePath);
 
