@@ -102,6 +102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         session.accessToken
       );
 
+      // Add no-cache headers to ensure fresh data
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       res.json(campaigns);
     } catch (error) {
       console.error("Get campaigns error:", error);
