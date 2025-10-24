@@ -232,7 +232,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         { name: 'Campaign', value: recordingSession.campaignName, inline: true },
         { name: 'File Size', value: `${fileSizeMB} MB`, inline: true }
       )
-      .setFooter({ text: 'Click Submit to name and upload, or Delete to discard' })
+      .setFooter({ text: 'Click Submit to name and upload, Download to save locally, or Delete to discard' })
       .setTimestamp();
 
     const submitButton = new ButtonBuilder()
@@ -241,6 +241,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setStyle(ButtonStyle.Success)
       .setEmoji('✅');
 
+    const downloadButton = new ButtonBuilder()
+      .setLabel('Download Recording')
+      .setStyle(ButtonStyle.Link)
+      .setURL(audioUrl)
+      .setEmoji('💾');
+
     const deleteButton = new ButtonBuilder()
       .setCustomId('delete_recording')
       .setLabel('Delete Recording')
@@ -248,7 +254,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setEmoji('🗑️');
 
     const row = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(submitButton, deleteButton);
+      .addComponents(submitButton, downloadButton, deleteButton);
 
     await interaction.editReply({ 
       embeds: [confirmEmbed],
