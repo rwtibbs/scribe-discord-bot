@@ -53,12 +53,20 @@ class GraphQLClient {
   }
 
   async getCampaignsByOwner(owner: string, accessToken?: string): Promise<Campaign[]> {
-    console.log(`🔍 Fetching campaigns for user with access token`);
+    console.log(`🔍 Fetching campaigns for owner: "${owner}"`);
     console.log(`🔍 Using accessToken: ${accessToken ? 'YES' : 'NO (using API key)'}`);
     
     const query = `
-      query ListCampaigns {
-        listCampaigns(limit: 100) {
+      query GetCampaignsByOwner($owner: String!) {
+        listCampaigns(
+          filter: { 
+            or: [
+              { owner: { eq: $owner } },
+              { owner: { contains: $owner } }
+            ]
+          }
+          limit: 100
+        ) {
           items {
             id
             name
@@ -72,7 +80,7 @@ class GraphQLClient {
 
     const result = await this.query<{ listCampaigns: { items: Campaign[] } }>(
       query, 
-      {}, 
+      { owner }, 
       accessToken
     );
     
