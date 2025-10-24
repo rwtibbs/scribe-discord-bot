@@ -14,7 +14,7 @@ import {
 import { getVoiceConnection } from '@discordjs/voice';
 import { sessionManager } from '../session-manager';
 import { storage } from '../../storage';
-import { uploadAudioToS3 } from '../../lib/s3-upload';
+import { uploadAudioToS3, deleteAudioFromS3 } from '../../lib/s3-upload';
 import { graphqlClient } from '../../lib/graphql';
 import { DISCORD_COLORS } from '../types';
 import * as fs from 'fs';
@@ -35,7 +35,52 @@ const pendingUploads = new Map<string, {
   campaignId: string;
   campaignName: string;
   startedAt: Date;
+  createdAt: Date;
 }>();
+
+// TTL for pending uploads (30 minutes)
+const PENDING_UPLOAD_TTL_MS = 30 * 60 * 1000;
+
+// Cleanup stale pending uploads
+async function cleanupStalePendingUploads() {
+  const now = Date.now();
+  const staleUserIds: string[] = [];
+
+  for (const [userId, pending] of Array.from(pendingUploads.entries())) {
+    const age = now - pending.createdAt.getTime();
+    if (age > PENDING_UPLOAD_TTL_MS) {
+      staleUserIds.push(userId);
+    }
+  }
+
+  for (const userId of staleUserIds) {
+    const pending = pendingUploads.get(userId);
+    if (!pending) continue;
+
+    console.log(`🧹 Cleaning up stale pending upload for user ${userId} (age: ${Math.floor((now - pending.createdAt.getTime()) / 60000)}min)`);
+
+    try {
+      // Delete S3 file
+      await deleteAudioFromS3(pending.audioUrl);
+      
+      // Delete local MP3 file
+      if (fs.existsSync(pending.mp3FilePath)) {
+        fs.unlinkSync(pending.mp3FilePath);
+      }
+    } catch (error) {
+      console.error(`Failed to cleanup stale upload for user ${userId}:`, error);
+    } finally {
+      pendingUploads.delete(userId);
+    }
+  }
+
+  if (staleUserIds.length > 0) {
+    console.log(`🧹 Cleaned up ${staleUserIds.length} stale pending upload(s)`);
+  }
+}
+
+// Run cleanup every 10 minutes
+setInterval(cleanupStalePendingUploads, 10 * 60 * 1000);
 
 export const data = new SlashCommandBuilder()
   .setName('stop')
@@ -133,6 +178,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       campaignId: recordingSession.campaignId,
       campaignName: recordingSession.campaignName,
       startedAt: recordingSession.startedAt,
+      createdAt: new Date(),
     });
 
     sessionManager.endRecording(interaction.user.id);
@@ -233,25 +279,62 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
     return;
   }
 
-  // Delete the MP3 file
-  if (fs.existsSync(pending.mp3FilePath)) {
-    fs.unlinkSync(pending.mp3FilePath);
+  await interaction.deferUpdate();
+
+  try {
+    // Delete the S3 file
+    await deleteAudioFromS3(pending.audioUrl);
+    
+    // Delete the local MP3 file
+    if (fs.existsSync(pending.mp3FilePath)) {
+      fs.unlinkSync(pending.mp3FilePath);
+    }
+
+    pendingUploads.delete(interaction.user.id);
+
+    const deleteEmbed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.WARNING)
+      .setTitle('🗑️ Recording Deleted')
+      .setDescription('Your recording has been permanently deleted from storage.')
+      .setTimestamp();
+
+    await interaction.editReply({ 
+      embeds: [deleteEmbed],
+      components: []
+    });
+
+    console.log(`🗑️ Recording and S3 file deleted by user ${interaction.user.tag}`);
+  } catch (error: any) {
+    console.error('Delete error:', error);
+
+    // Don't clean up - let user retry
+    const errorEmbed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.ERROR)
+      .setTitle('❌ Delete Failed')
+      .setDescription(`Failed to delete the recording: ${error.message || 'Unknown error'}\n\nYou can try again or contact support.`)
+      .setTimestamp();
+
+    // Recreate buttons so user can retry
+    const submitButton = new ButtonBuilder()
+      .setCustomId('submit_recording')
+      .setLabel('Submit to TabletopScribe')
+      .setStyle(ButtonStyle.Success)
+      .setEmoji('✅');
+
+    const deleteButton = new ButtonBuilder()
+      .setCustomId('delete_recording')
+      .setLabel('Delete Recording')
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji('🗑️');
+
+    const row = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(submitButton, deleteButton);
+
+    await interaction.editReply({
+      embeds: [errorEmbed],
+      components: [row]
+    });
   }
-
-  pendingUploads.delete(interaction.user.id);
-
-  const deleteEmbed = new EmbedBuilder()
-    .setColor(DISCORD_COLORS.WARNING)
-    .setTitle('🗑️ Recording Deleted')
-    .setDescription('Your recording has been discarded and will not be uploaded.')
-    .setTimestamp();
-
-  await interaction.update({ 
-    embeds: [deleteEmbed],
-    components: []
-  });
-
-  console.log(`🗑️ Recording deleted by user ${interaction.user.tag}`);
 }
 
 // Handle modal submission - create session
@@ -319,18 +402,35 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
   } catch (error: any) {
     console.error('Session creation error:', error);
 
+    // Don't clean up - let user retry
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Upload Failed')
       .setDescription(error.message || 'Unable to create session')
       .addFields(
-        { name: 'Troubleshooting', value: '• Try logging in again with `/setup`\n• Check that the campaign still exists\n• Contact support if the issue persists' }
+        { name: 'Troubleshooting', value: '• Try logging in again with `/setup`\n• Click Submit to try again\n• Or click Delete to discard the recording' }
       )
       .setTimestamp();
 
+    // Recreate buttons so user can retry or delete
+    const submitButton = new ButtonBuilder()
+      .setCustomId('submit_recording')
+      .setLabel('Submit to TabletopScribe')
+      .setStyle(ButtonStyle.Success)
+      .setEmoji('✅');
+
+    const deleteButton = new ButtonBuilder()
+      .setCustomId('delete_recording')
+      .setLabel('Delete Recording')
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji('🗑️');
+
+    const row = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(submitButton, deleteButton);
+
     await interaction.editReply({
       embeds: [errorEmbed],
-      components: []
+      components: [row]
     });
   }
 }

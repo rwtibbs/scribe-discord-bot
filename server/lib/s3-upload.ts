@@ -34,3 +34,25 @@ export async function uploadAudioToS3(
   
   return s3Url;
 }
+
+export async function deleteAudioFromS3(s3Url: string): Promise<void> {
+  // Extract key from S3 URL
+  // URL format: https://bucket.s3.region.amazonaws.com/key
+  const urlParts = s3Url.split('.amazonaws.com/');
+  if (urlParts.length !== 2) {
+    throw new Error('Invalid S3 URL format');
+  }
+  
+  const key = urlParts[1];
+  
+  console.log(`🗑️ Deleting ${key} from S3...`);
+
+  const params = {
+    Bucket: config.s3Bucket,
+    Key: key,
+  };
+
+  await s3.deleteObject(params).promise();
+  
+  console.log(`✅ Delete complete: ${key}`);
+}
