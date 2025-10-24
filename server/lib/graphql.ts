@@ -81,7 +81,19 @@ class GraphQLClient {
       accessToken
     );
     
-    return result.listCampaigns.items.filter(campaign => !campaign._deleted);
+    console.log(`📊 GraphQL returned ${result.listCampaigns.items.length} total campaigns for owner: ${owner}`);
+    
+    // Log each campaign with its details
+    result.listCampaigns.items.forEach((campaign, index) => {
+      console.log(`  Campaign ${index + 1}: "${campaign.name}" (ID: ${campaign.id})`);
+      console.log(`    Owner: ${campaign.owner}`);
+      console.log(`    Deleted: ${campaign._deleted ? 'YES' : 'NO'}`);
+    });
+    
+    const filtered = result.listCampaigns.items.filter(campaign => !campaign._deleted);
+    console.log(`✅ After filtering deleted: ${filtered.length} campaigns remaining`);
+    
+    return filtered;
   }
 
   async createSession(sessionData: {
