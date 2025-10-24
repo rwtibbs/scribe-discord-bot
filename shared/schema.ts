@@ -60,3 +60,20 @@ export const insertActiveRecordingSchema = createInsertSchema(activeRecordings);
 
 export type InsertActiveRecording = z.infer<typeof insertActiveRecordingSchema>;
 export type ActiveRecording = typeof activeRecordings.$inferSelect;
+
+export const pendingUploads = pgTable("pending_uploads", {
+  discordUserId: text("discord_user_id").primaryKey(),
+  mp3FilePath: text("mp3_file_path").notNull(),
+  audioUrl: text("audio_url").notNull(),
+  duration: text("duration").notNull(), // Store as text to avoid type issues
+  fileSizeMB: text("file_size_mb").notNull(),
+  campaignId: text("campaign_id").notNull(),
+  campaignName: text("campaign_name").notNull(),
+  startedAt: timestamp("started_at").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+});
+
+export const insertPendingUploadSchema = createInsertSchema(pendingUploads);
+
+export type InsertPendingUpload = z.infer<typeof insertPendingUploadSchema>;
+export type PendingUpload = typeof pendingUploads.$inferSelect;

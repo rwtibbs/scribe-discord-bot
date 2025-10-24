@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, type SetupToken, type InsertSetupToken, type ActiveRecording, type InsertActiveRecording, users, discordSessions, setupTokens, activeRecordings } from "@shared/schema";
+import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, type SetupToken, type InsertSetupToken, type ActiveRecording, type InsertActiveRecording, type PendingUpload, type InsertPendingUpload, users, discordSessions, setupTokens, activeRecordings, pendingUploads } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq, and, gt } from "drizzle-orm";
@@ -27,6 +27,11 @@ export interface IStorage {
   getActiveRecording(discordUserId: string): Promise<ActiveRecording | undefined>;
   upsertActiveRecording(recording: InsertActiveRecording): Promise<ActiveRecording>;
   deleteActiveRecording(discordUserId: string): Promise<void>;
+  
+  // Pending upload methods
+  getPendingUpload(discordUserId: string): Promise<PendingUpload | undefined>;
+  upsertPendingUpload(upload: InsertPendingUpload): Promise<PendingUpload>;
+  deletePendingUpload(discordUserId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -34,12 +39,14 @@ export class MemStorage implements IStorage {
   private discordSessions: Map<string, DiscordSession>;
   private setupTokens: Map<string, SetupToken>;
   private activeRecordings: Map<string, ActiveRecording>;
+  private pendingUploads: Map<string, PendingUpload>;
 
   constructor() {
     this.users = new Map();
     this.discordSessions = new Map();
     this.setupTokens = new Map();
     this.activeRecordings = new Map();
+    this.pendingUploads = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -116,6 +123,22 @@ export class MemStorage implements IStorage {
 
   async deleteActiveRecording(discordUserId: string): Promise<void> {
     this.activeRecordings.delete(discordUserId);
+  }
+
+  async getPendingUpload(discordUserId: string): Promise<PendingUpload | undefined> {
+    return this.pendingUploads.get(discordUserId);
+  }
+
+  async upsertPendingUpload(upload: InsertPendingUpload): Promise<PendingUpload> {
+    const pendingUpload: PendingUpload = {
+      ...upload,
+    };
+    this.pendingUploads.set(upload.discordUserId, pendingUpload);
+    return pendingUpload;
+  }
+
+  async deletePendingUpload(discordUserId: string): Promise<void> {
+    this.pendingUploads.delete(discordUserId);
   }
 }
 
@@ -237,6 +260,40 @@ export class DbStorage implements IStorage {
 
   async deleteActiveRecording(discordUserId: string): Promise<void> {
     await this.db.delete(activeRecordings).where(eq(activeRecordings.discordUserId, discordUserId));
+  }
+
+  async getPendingUpload(discordUserId: string): Promise<PendingUpload | undefined> {
+    const result = await this.db
+      .select()
+      .from(pendingUploads)
+      .where(eq(pendingUploads.discordUserId, discordUserId))
+      .limit(1);
+    return result[0];
+  }
+
+  async upsertPendingUpload(upload: InsertPendingUpload): Promise<PendingUpload> {
+    const result = await this.db
+      .insert(pendingUploads)
+      .values(upload)
+      .onConflictDoUpdate({
+        target: pendingUploads.discordUserId,
+        set: {
+          mp3FilePath: upload.mp3FilePath,
+          audioUrl: upload.audioUrl,
+          duration: upload.duration,
+          fileSizeMB: upload.fileSizeMB,
+          campaignId: upload.campaignId,
+          campaignName: upload.campaignName,
+          startedAt: upload.startedAt,
+          createdAt: upload.createdAt,
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async deletePendingUpload(discordUserId: string): Promise<void> {
+    await this.db.delete(pendingUploads).where(eq(pendingUploads.discordUserId, discordUserId));
   }
 }
 

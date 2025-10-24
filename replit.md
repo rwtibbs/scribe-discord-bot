@@ -167,12 +167,13 @@ Optional environment variables:
 - When `/stop` is called, checks database if not found in memory
 - Cleared from both database and memory after `/stop` command completes upload
 
-### Pending Uploads (In-Memory with TTL)
+### Pending Uploads (Database + In-Memory with TTL)
 - Processed recordings waiting for user confirmation (Submit/Delete)
+- Database persistence ensures pending uploads survive bot restarts
 - Each entry contains: MP3 file path, S3 URL, duration, campaign info, timestamps
+- When buttons are clicked, checks database if not found in memory
 - TTL: 30 minutes with cleanup running every 10 minutes
-- Automatic cleanup prevents orphaned S3 files and memory leaks
-- On cleanup: deletes S3 file, local MP3, and removes from map
+- Automatic cleanup deletes S3 file, local MP3, and removes from both database and memory
 
 ## Security Features
 

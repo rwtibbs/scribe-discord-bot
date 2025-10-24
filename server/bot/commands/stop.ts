@@ -67,6 +67,9 @@ async function cleanupStalePendingUploads() {
       if (fs.existsSync(pending.mp3FilePath)) {
         fs.unlinkSync(pending.mp3FilePath);
       }
+      
+      // Delete from database
+      await storage.deletePendingUpload(userId);
     } catch (error) {
       console.error(`Failed to cleanup stale upload for user ${userId}:`, error);
     } finally {
@@ -188,11 +191,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const s3FileName = `discord_${recordingSession.campaignName.replace(/\s+/g, '_')}_${Date.now()}.mp3`;
     const audioUrl = await uploadAudioToS3(mp3FilePath, s3FileName);
 
-    // Store pending upload data
-    pendingUploads.set(interaction.user.id, {
+    // Store pending upload data in both memory and database
+    const pendingData = {
       mp3FilePath,
       audioUrl,
       duration,
+      fileSizeMB,
+      campaignId: recordingSession.campaignId,
+      campaignName: recordingSession.campaignName,
+      startedAt: recordingSession.startedAt,
+      createdAt: new Date(),
+    };
+    
+    pendingUploads.set(interaction.user.id, pendingData);
+    
+    await storage.upsertPendingUpload({
+      discordUserId: interaction.user.id,
+      mp3FilePath,
+      audioUrl,
+      duration: duration.toString(),
       fileSizeMB,
       campaignId: recordingSession.campaignId,
       campaignName: recordingSession.campaignName,
@@ -202,7 +219,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     sessionManager.endRecording(interaction.user.id);
     
-    // Also remove from database
+    // Also remove active recording from database
     await storage.deleteActiveRecording(interaction.user.id);
 
     // Show confirmation with buttons
@@ -259,7 +276,27 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 // Handle submit button - show modal for session name
 export async function handleSubmitButton(interaction: ButtonInteraction) {
-  const pending = pendingUploads.get(interaction.user.id);
+  // Check both in-memory and database for pending upload
+  let pending = pendingUploads.get(interaction.user.id);
+  
+  // If not in memory, check database (in case bot restarted)
+  if (!pending) {
+    const dbPending = await storage.getPendingUpload(interaction.user.id);
+    if (dbPending) {
+      pending = {
+        mp3FilePath: dbPending.mp3FilePath,
+        audioUrl: dbPending.audioUrl,
+        duration: parseInt(dbPending.duration),
+        fileSizeMB: dbPending.fileSizeMB,
+        campaignId: dbPending.campaignId,
+        campaignName: dbPending.campaignName,
+        startedAt: dbPending.startedAt,
+        createdAt: dbPending.createdAt,
+      };
+      pendingUploads.set(interaction.user.id, pending);
+      console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+    }
+  }
   
   if (!pending) {
     await interaction.reply({
@@ -291,7 +328,27 @@ export async function handleSubmitButton(interaction: ButtonInteraction) {
 
 // Handle delete button - remove recording
 export async function handleDeleteButton(interaction: ButtonInteraction) {
-  const pending = pendingUploads.get(interaction.user.id);
+  // Check both in-memory and database for pending upload
+  let pending = pendingUploads.get(interaction.user.id);
+  
+  // If not in memory, check database (in case bot restarted)
+  if (!pending) {
+    const dbPending = await storage.getPendingUpload(interaction.user.id);
+    if (dbPending) {
+      pending = {
+        mp3FilePath: dbPending.mp3FilePath,
+        audioUrl: dbPending.audioUrl,
+        duration: parseInt(dbPending.duration),
+        fileSizeMB: dbPending.fileSizeMB,
+        campaignId: dbPending.campaignId,
+        campaignName: dbPending.campaignName,
+        startedAt: dbPending.startedAt,
+        createdAt: dbPending.createdAt,
+      };
+      pendingUploads.set(interaction.user.id, pending);
+      console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+    }
+  }
   
   if (!pending) {
     await interaction.reply({
@@ -313,6 +370,9 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
     }
 
     pendingUploads.delete(interaction.user.id);
+    
+    // Also remove from database
+    await storage.deletePendingUpload(interaction.user.id);
 
     const deleteEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.WARNING)
@@ -361,7 +421,27 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
 
 // Handle modal submission - create session
 export async function handleSessionNameModal(interaction: ModalSubmitInteraction) {
-  const pending = pendingUploads.get(interaction.user.id);
+  // Check both in-memory and database for pending upload
+  let pending = pendingUploads.get(interaction.user.id);
+  
+  // If not in memory, check database (in case bot restarted)
+  if (!pending) {
+    const dbPending = await storage.getPendingUpload(interaction.user.id);
+    if (dbPending) {
+      pending = {
+        mp3FilePath: dbPending.mp3FilePath,
+        audioUrl: dbPending.audioUrl,
+        duration: parseInt(dbPending.duration),
+        fileSizeMB: dbPending.fileSizeMB,
+        campaignId: dbPending.campaignId,
+        campaignName: dbPending.campaignName,
+        startedAt: dbPending.startedAt,
+        createdAt: dbPending.createdAt,
+      };
+      pendingUploads.set(interaction.user.id, pending);
+      console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+    }
+  }
   
   if (!pending) {
     await interaction.reply({
@@ -401,6 +481,9 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
     }
 
     pendingUploads.delete(interaction.user.id);
+    
+    // Also remove from database
+    await storage.deletePendingUpload(interaction.user.id);
 
     const successEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.SUCCESS)
