@@ -8,18 +8,26 @@ export const data = new SlashCommandBuilder()
   .setDescription('Get a secure link to configure your TabletopScribe account');
 
 function getBaseUrl(): string {
+  console.log('🔍 getBaseUrl() called - checking environment variables:');
+  console.log('  PUBLIC_URL:', process.env.PUBLIC_URL || '(not set)');
+  console.log('  REPLIT_DEV_DOMAIN:', process.env.REPLIT_DEV_DOMAIN || '(not set)');
+  
   // Check for custom PUBLIC_URL (for deployments)
   // User should set this to their deployment URL like: https://scribe-bot.replit.app
   if (process.env.PUBLIC_URL) {
+    console.log('✅ Using PUBLIC_URL:', process.env.PUBLIC_URL);
     return process.env.PUBLIC_URL;
   }
   
   // Fallback to dev domain (development environment)
   if (process.env.REPLIT_DEV_DOMAIN) {
-    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    const url = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    console.log('⚠️ Using REPLIT_DEV_DOMAIN:', url);
+    return url;
   }
   
   // Final fallback for local development
+  console.log('⚠️ Using localhost fallback');
   return 'http://localhost:5000';
 }
 
