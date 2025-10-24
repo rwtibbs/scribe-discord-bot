@@ -53,6 +53,9 @@ class GraphQLClient {
   }
 
   async getCampaignsByOwner(owner: string, accessToken?: string): Promise<Campaign[]> {
+    console.log(`🔍 Fetching campaigns for owner: "${owner}" (length: ${owner.length})`);
+    console.log(`🔍 Using accessToken: ${accessToken ? 'YES' : 'NO (using API key)'}`);
+    
     const query = `
       query GetCampaignsByOwner($owner: String!) {
         listCampaigns(
@@ -81,17 +84,24 @@ class GraphQLClient {
       accessToken
     );
     
-    console.log(`📊 GraphQL returned ${result.listCampaigns.items.length} total campaigns for owner: ${owner}`);
+    console.log(`📊 GraphQL returned ${result.listCampaigns.items.length} total campaigns`);
     
     // Log each campaign with its details
     result.listCampaigns.items.forEach((campaign, index) => {
       console.log(`  Campaign ${index + 1}: "${campaign.name}" (ID: ${campaign.id})`);
-      console.log(`    Owner: ${campaign.owner}`);
+      console.log(`    Owner field value: "${campaign.owner}"`);
       console.log(`    Deleted: ${campaign._deleted ? 'YES' : 'NO'}`);
+      console.log(`    Owner match: eq=${campaign.owner === owner}, contains=${campaign.owner.includes(owner)}`);
     });
     
     const filtered = result.listCampaigns.items.filter(campaign => !campaign._deleted);
     console.log(`✅ After filtering deleted: ${filtered.length} campaigns remaining`);
+    
+    // Log the final campaigns being returned
+    console.log(`📋 Final campaigns being returned:`);
+    filtered.forEach((campaign, index) => {
+      console.log(`  ${index + 1}. "${campaign.name}"`);
+    });
     
     return filtered;
   }
