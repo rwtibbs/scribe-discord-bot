@@ -63,7 +63,7 @@ export type ActiveRecording = typeof activeRecordings.$inferSelect;
 
 export const pendingUploads = pgTable("pending_uploads", {
   discordUserId: text("discord_user_id").primaryKey(),
-  mp3FilePath: text("mp3_file_path").notNull(),
+  aacFilePath: text("aac_file_path").notNull(),
   audioUrl: text("audio_url").notNull(),
   duration: text("duration").notNull(), // Store as text to avoid type issues
   fileSizeMB: text("file_size_mb").notNull(),

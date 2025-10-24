@@ -278,7 +278,7 @@ export class DbStorage implements IStorage {
       .onConflictDoUpdate({
         target: pendingUploads.discordUserId,
         set: {
-          mp3FilePath: upload.mp3FilePath,
+          aacFilePath: upload.aacFilePath,
           audioUrl: upload.audioUrl,
           duration: upload.duration,
           fileSizeMB: upload.fileSizeMB,

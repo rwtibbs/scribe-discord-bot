@@ -28,7 +28,7 @@ const execAsync = promisify(exec);
 
 // Store processed recordings waiting for user confirmation
 const pendingUploads = new Map<string, {
-  mp3FilePath: string;
+  aacFilePath: string;
   audioUrl: string;
   duration: number;
   fileSizeMB: string;
@@ -63,9 +63,9 @@ async function cleanupStalePendingUploads() {
       // Delete S3 file
       await deleteAudioFromS3(pending.audioUrl);
       
-      // Delete local MP3 file
-      if (fs.existsSync(pending.mp3FilePath)) {
-        fs.unlinkSync(pending.mp3FilePath);
+      // Delete local AAC file
+      if (fs.existsSync(pending.aacFilePath)) {
+        fs.unlinkSync(pending.aacFilePath);
       }
       
       // Delete from database
@@ -89,10 +89,11 @@ export const data = new SlashCommandBuilder()
   .setName('stop')
   .setDescription('Stop recording and upload to TabletopScribe');
 
-async function convertPcmToMp3(pcmPath: string, mp3Path: string): Promise<void> {
+async function convertPcmToAac(pcmPath: string, aacPath: string): Promise<void> {
   const ffmpegPath = require('ffmpeg-static');
   
-  const command = `${ffmpegPath} -f s16le -ar 48000 -ac 2 -i "${pcmPath}" -codec:a libmp3lame -b:a 192k "${mp3Path}"`;
+  // Convert to AAC at 96 kbps mono for efficient voice recording
+  const command = `${ffmpegPath} -f s16le -ar 48000 -ac 2 -i "${pcmPath}" -codec:a aac -b:a 96k -ac 1 "${aacPath}"`;
   
   await execAsync(command);
 }
@@ -171,14 +172,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       throw new Error('Recording file not found');
     }
 
-    const mp3FileName = path.basename(recordingSession.filePath, '.pcm') + '.mp3';
-    const mp3FilePath = path.join(path.dirname(recordingSession.filePath), mp3FileName);
+    const aacFileName = path.basename(recordingSession.filePath, '.pcm') + '.m4a';
+    const aacFilePath = path.join(path.dirname(recordingSession.filePath), aacFileName);
 
-    await convertPcmToMp3(recordingSession.filePath, mp3FilePath);
+    await convertPcmToAac(recordingSession.filePath, aacFilePath);
 
     fs.unlinkSync(recordingSession.filePath);
 
-    const stats = fs.statSync(mp3FilePath);
+    const stats = fs.statSync(aacFilePath);
     const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
 
     processingEmbed.setFields(
@@ -188,12 +189,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     );
     await interaction.editReply({ embeds: [processingEmbed] });
 
-    const s3FileName = `discord_${recordingSession.campaignName.replace(/\s+/g, '_')}_${Date.now()}.mp3`;
-    const audioUrl = await uploadAudioToS3(mp3FilePath, s3FileName);
+    const s3FileName = `discord_${recordingSession.campaignName.replace(/\s+/g, '_')}_${Date.now()}.m4a`;
+    const audioUrl = await uploadAudioToS3(aacFilePath, s3FileName);
 
     // Store pending upload data in both memory and database
     const pendingData = {
-      mp3FilePath,
+      aacFilePath,
       audioUrl,
       duration,
       fileSizeMB,
@@ -207,7 +208,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     
     await storage.upsertPendingUpload({
       discordUserId: interaction.user.id,
-      mp3FilePath,
+      aacFilePath,
       audioUrl,
       duration: duration.toString(),
       fileSizeMB,
@@ -290,7 +291,7 @@ export async function handleSubmitButton(interaction: ButtonInteraction) {
     const dbPending = await storage.getPendingUpload(interaction.user.id);
     if (dbPending) {
       pending = {
-        mp3FilePath: dbPending.mp3FilePath,
+        aacFilePath: dbPending.aacFilePath,
         audioUrl: dbPending.audioUrl,
         duration: parseInt(dbPending.duration),
         fileSizeMB: dbPending.fileSizeMB,
@@ -342,7 +343,7 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
     const dbPending = await storage.getPendingUpload(interaction.user.id);
     if (dbPending) {
       pending = {
-        mp3FilePath: dbPending.mp3FilePath,
+        aacFilePath: dbPending.aacFilePath,
         audioUrl: dbPending.audioUrl,
         duration: parseInt(dbPending.duration),
         fileSizeMB: dbPending.fileSizeMB,
@@ -370,9 +371,9 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
     // Delete the S3 file
     await deleteAudioFromS3(pending.audioUrl);
     
-    // Delete the local MP3 file
-    if (fs.existsSync(pending.mp3FilePath)) {
-      fs.unlinkSync(pending.mp3FilePath);
+    // Delete the local AAC file
+    if (fs.existsSync(pending.aacFilePath)) {
+      fs.unlinkSync(pending.aacFilePath);
     }
 
     pendingUploads.delete(interaction.user.id);
@@ -435,7 +436,7 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
     const dbPending = await storage.getPendingUpload(interaction.user.id);
     if (dbPending) {
       pending = {
-        mp3FilePath: dbPending.mp3FilePath,
+        aacFilePath: dbPending.aacFilePath,
         audioUrl: dbPending.audioUrl,
         duration: parseInt(dbPending.duration),
         fileSizeMB: dbPending.fileSizeMB,
@@ -469,7 +470,7 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
       throw new Error('Not authenticated. Please use /setup to login.');
     }
 
-    const transcriptionUrl = pending.audioUrl.replace('.mp3', '.txt');
+    const transcriptionUrl = pending.audioUrl.replace('.m4a', '.txt');
     
     await graphqlClient.createSession({
       name: sessionName,
@@ -481,9 +482,9 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
       date: pending.startedAt,
     }, dbSession.accessToken);
 
-    // Clean up the MP3 file
-    if (fs.existsSync(pending.mp3FilePath)) {
-      fs.unlinkSync(pending.mp3FilePath);
+    // Clean up the AAC file
+    if (fs.existsSync(pending.aacFilePath)) {
+      fs.unlinkSync(pending.aacFilePath);
     }
 
     pendingUploads.delete(interaction.user.id);
