@@ -60,6 +60,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (error: any) {
     console.error('Campaigns error:', error);
 
+    // Check if this is an authentication error (401)
+    const is401Error = error.message?.includes('401') || error.statusCode === 401;
+    
+    if (is401Error) {
+      // User's session has expired or they aren't authenticated
+      const authErrorEmbed = new EmbedBuilder()
+        .setColor(DISCORD_COLORS.ERROR)
+        .setTitle('❌ Authentication Required')
+        .setDescription('Your TabletopScribe session has expired or is invalid.')
+        .addFields(
+          { name: 'What to do', value: '1. Use `/setup` to login again\n2. Click the link and enter your TabletopScribe credentials\n3. Try `/campaigns` again' }
+        )
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [authErrorEmbed] });
+      return;
+    }
+
+    // General error handling
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Failed to Load Campaigns')

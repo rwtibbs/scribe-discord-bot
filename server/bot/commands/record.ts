@@ -219,17 +219,32 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (error: any) {
     console.error('Record error:', error);
 
-    let troubleshootingSteps = '• Make sure you are in a voice channel before using /record\n• Ensure the bot has permission to join voice channels\n• Check that the campaign name is correct\n• Try logging in again with `/setup`';
+    // Check if this is an authentication error (401)
+    const is401Error = error.message?.includes('401') || error.statusCode === 401;
     
-    // Special handling for 401 errors
-    if (error.message?.includes('401')) {
-      troubleshootingSteps = '• **Join a voice channel first** - You must be in a voice channel to record\n• Try logging in again with `/setup` if the issue persists\n• Check that your TabletopScribe credentials are still valid';
+    if (is401Error) {
+      // User's session has expired or they aren't authenticated
+      const authErrorEmbed = new EmbedBuilder()
+        .setColor(DISCORD_COLORS.ERROR)
+        .setTitle('❌ Authentication Required')
+        .setDescription('Your TabletopScribe session has expired or is invalid.')
+        .addFields(
+          { name: 'What to do', value: '1. Use `/setup` to login again\n2. Click the link and enter your TabletopScribe credentials\n3. Try `/record` again' }
+        )
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [authErrorEmbed] });
+      return;
     }
+
+    // General error handling
+    let errorMessage = error.message || 'Unable to start recording';
+    let troubleshootingSteps = '• Make sure you are in a voice channel before using /record\n• Ensure the bot has permission to join voice channels\n• Check that the campaign name is correct\n• Try logging in again with `/setup`';
 
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ Recording Failed')
-      .setDescription(error.message || 'Unable to start recording')
+      .setDescription(errorMessage)
       .addFields(
         { name: 'Troubleshooting', value: troubleshootingSteps }
       )
