@@ -81,9 +81,8 @@ class GraphQLClient {
     // Log each campaign with its details
     result.listCampaigns.items.forEach((campaign, index) => {
       console.log(`  Campaign ${index + 1}: "${campaign.name}" (ID: ${campaign.id})`);
-      console.log(`    Owner field value: "${campaign.owner}"`);
+      console.log(`    Owner: "${campaign.owner}"`);
       console.log(`    Deleted: ${campaign._deleted ? 'YES' : 'NO'}`);
-      console.log(`    Owner match: eq=${campaign.owner === owner}, contains=${campaign.owner.includes(owner)}`);
     });
     
     const filtered = result.listCampaigns.items.filter(campaign => !campaign._deleted);
