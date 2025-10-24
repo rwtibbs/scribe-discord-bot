@@ -43,7 +43,7 @@ shared/
 - **Persistent Sessions**: PostgreSQL database stores user credentials across bot restarts
 - **Campaign Selection UI**: Web interface displays campaigns with clipboard copy for /record commands
 - **Voice Recording**: Join Discord voice channels and record audio
-- **Auto-Upload**: Convert recordings to MP3 and upload to S3
+- **Auto-Upload**: Convert recordings to AAC and upload to S3
 - **Session Creation**: Automatically create sessions in TabletopScribe via GraphQL using Cognito sub
 - **Multi-Environment**: Support for DEV and DEVSORT environments
 
@@ -125,24 +125,24 @@ Optional environment variables:
 4. User types `/stop` when finished
 5. Bot:
    - Saves recording to temporary file
-   - Converts PCM to MP3
+   - Converts PCM to AAC
    - Uploads audio to S3
-   - Shows confirmation with Submit/Delete buttons
+   - Shows confirmation with Submit/Delete/Download buttons
 6. User clicks **Submit**:
    - Modal appears with pre-filled session name (editable)
    - Session created in TabletopScribe GraphQL API
    - Audio URL linked to session
    - Local and S3 files cleaned up
 7. OR User clicks **Delete**:
-   - S3 file and local MP3 deleted
+   - S3 file and local AAC deleted
    - Recording discarded without creating session
 8. TabletopScribe's existing Lambda processing takes over (if submitted)
 
 ## Recording Process
 
 1. Audio is captured from Discord voice channel in PCM format
-2. PCM is converted to MP3 using ffmpeg
-3. MP3 is uploaded to S3 bucket at `public/audioUploads/`
+2. PCM is converted to AAC (96kbps mono .m4a) using ffmpeg
+3. AAC file is uploaded to S3 bucket at `public/audioUploads/`
 4. Session is created in GraphQL with status "UPLOADED"
 5. Session appears in TabletopScribe web app for processing
 
@@ -168,12 +168,12 @@ Optional environment variables:
 - Cleared from both database and memory after `/stop` command completes upload
 
 ### Pending Uploads (Database + In-Memory with TTL)
-- Processed recordings waiting for user confirmation (Submit/Delete)
+- Processed recordings waiting for user confirmation (Submit/Delete/Download)
 - Database persistence ensures pending uploads survive bot restarts
-- Each entry contains: MP3 file path, S3 URL, duration, campaign info, timestamps
+- Each entry contains: AAC file path, S3 URL, duration, campaign info, timestamps
 - When buttons are clicked, checks database if not found in memory
 - TTL: 30 minutes with cleanup running every 10 minutes
-- Automatic cleanup deletes S3 file, local MP3, and removes from both database and memory
+- Automatic cleanup deletes S3 file, local AAC, and removes from both database and memory
 
 ## Security Features
 
@@ -217,6 +217,6 @@ All non-voice features work perfectly on Replit:
 
 - Bot must have permission to join voice channels
 - Recordings are stored temporarily and deleted after upload
-- Audio quality: 48kHz, 2 channels, MP3 192kbps
+- Audio quality: 48kHz, AAC 96kbps mono (.m4a format)
 - Maximum recording duration: Limited by Discord/system resources
 - Setup tokens automatically cleaned up when expired (consider scheduled cleanup task for production)
