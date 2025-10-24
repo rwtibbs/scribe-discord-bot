@@ -45,3 +45,18 @@ export const insertSetupTokenSchema = createInsertSchema(setupTokens).omit({
 
 export type InsertSetupToken = z.infer<typeof insertSetupTokenSchema>;
 export type SetupToken = typeof setupTokens.$inferSelect;
+
+export const activeRecordings = pgTable("active_recordings", {
+  discordUserId: text("discord_user_id").primaryKey(),
+  guildId: text("guild_id").notNull(),
+  channelId: text("channel_id").notNull(),
+  campaignId: text("campaign_id").notNull(),
+  campaignName: text("campaign_name").notNull(),
+  filePath: text("file_path").notNull(),
+  startedAt: timestamp("started_at").notNull(),
+});
+
+export const insertActiveRecordingSchema = createInsertSchema(activeRecordings);
+
+export type InsertActiveRecording = z.infer<typeof insertActiveRecordingSchema>;
+export type ActiveRecording = typeof activeRecordings.$inferSelect;

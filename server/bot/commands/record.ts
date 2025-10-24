@@ -159,7 +159,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const fileName = `recording_${interaction.user.id}_${timestamp}.pcm`;
     const filePath = path.join(recordingDir, fileName);
 
-    sessionManager.startRecording(interaction.user.id, {
+    const recordingSession = {
       discordId: interaction.user.id,
       guildId: voiceChannel.guild.id,
       channelId: voiceChannel.id,
@@ -167,6 +167,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       campaignName: campaign.name,
       startedAt: new Date(),
       filePath,
+    };
+
+    // Save to both in-memory and database for reliability
+    sessionManager.startRecording(interaction.user.id, recordingSession);
+    
+    await storage.upsertActiveRecording({
+      discordUserId: interaction.user.id,
+      guildId: voiceChannel.guild.id,
+      channelId: voiceChannel.id,
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      filePath,
+      startedAt: new Date(),
     });
 
     const writeStream = createWriteStream(filePath);

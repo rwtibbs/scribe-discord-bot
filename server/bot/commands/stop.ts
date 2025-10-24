@@ -111,7 +111,26 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const recordingSession = sessionManager.getRecordingSession(interaction.user.id);
+  // Check both in-memory and database for active recording
+  let recordingSession = sessionManager.getRecordingSession(interaction.user.id);
+  
+  // If not in memory, check database (in case bot restarted)
+  if (!recordingSession) {
+    const dbRecording = await storage.getActiveRecording(interaction.user.id);
+    if (dbRecording) {
+      // Recreate session from database
+      recordingSession = {
+        discordId: dbRecording.discordUserId,
+        guildId: dbRecording.guildId,
+        channelId: dbRecording.channelId,
+        campaignId: dbRecording.campaignId,
+        campaignName: dbRecording.campaignName,
+        startedAt: dbRecording.startedAt,
+        filePath: dbRecording.filePath,
+      };
+      console.log(`🔄 Recovered recording session from database for user ${interaction.user.id}`);
+    }
+  }
 
   if (!recordingSession) {
     const errorEmbed = new EmbedBuilder()
@@ -182,6 +201,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     sessionManager.endRecording(interaction.user.id);
+    
+    // Also remove from database
+    await storage.deleteActiveRecording(interaction.user.id);
 
     // Show confirmation with buttons
     const confirmEmbed = new EmbedBuilder()

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, type SetupToken, type InsertSetupToken, users, discordSessions, setupTokens } from "@shared/schema";
+import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, type SetupToken, type InsertSetupToken, type ActiveRecording, type InsertActiveRecording, users, discordSessions, setupTokens, activeRecordings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { eq, and, gt } from "drizzle-orm";
@@ -22,17 +22,24 @@ export interface IStorage {
   createSetupToken(token: InsertSetupToken): Promise<SetupToken>;
   getSetupToken(token: string): Promise<SetupToken | undefined>;
   markTokenUsed(token: string): Promise<void>;
+  
+  // Active recording methods
+  getActiveRecording(discordUserId: string): Promise<ActiveRecording | undefined>;
+  upsertActiveRecording(recording: InsertActiveRecording): Promise<ActiveRecording>;
+  deleteActiveRecording(discordUserId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private discordSessions: Map<string, DiscordSession>;
   private setupTokens: Map<string, SetupToken>;
+  private activeRecordings: Map<string, ActiveRecording>;
 
   constructor() {
     this.users = new Map();
     this.discordSessions = new Map();
     this.setupTokens = new Map();
+    this.activeRecordings = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -93,6 +100,22 @@ export class MemStorage implements IStorage {
       setupToken.used = new Date();
       this.setupTokens.set(token, setupToken);
     }
+  }
+
+  async getActiveRecording(discordUserId: string): Promise<ActiveRecording | undefined> {
+    return this.activeRecordings.get(discordUserId);
+  }
+
+  async upsertActiveRecording(recording: InsertActiveRecording): Promise<ActiveRecording> {
+    const activeRecording: ActiveRecording = {
+      ...recording,
+    };
+    this.activeRecordings.set(recording.discordUserId, activeRecording);
+    return activeRecording;
+  }
+
+  async deleteActiveRecording(discordUserId: string): Promise<void> {
+    this.activeRecordings.delete(discordUserId);
   }
 }
 
@@ -182,6 +205,38 @@ export class DbStorage implements IStorage {
       .update(setupTokens)
       .set({ used: new Date() })
       .where(eq(setupTokens.token, token));
+  }
+
+  async getActiveRecording(discordUserId: string): Promise<ActiveRecording | undefined> {
+    const result = await this.db
+      .select()
+      .from(activeRecordings)
+      .where(eq(activeRecordings.discordUserId, discordUserId))
+      .limit(1);
+    return result[0];
+  }
+
+  async upsertActiveRecording(recording: InsertActiveRecording): Promise<ActiveRecording> {
+    const result = await this.db
+      .insert(activeRecordings)
+      .values(recording)
+      .onConflictDoUpdate({
+        target: activeRecordings.discordUserId,
+        set: {
+          guildId: recording.guildId,
+          channelId: recording.channelId,
+          campaignId: recording.campaignId,
+          campaignName: recording.campaignName,
+          filePath: recording.filePath,
+          startedAt: recording.startedAt,
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async deleteActiveRecording(discordUserId: string): Promise<void> {
+    await this.db.delete(activeRecordings).where(eq(activeRecordings.discordUserId, discordUserId));
   }
 }
 

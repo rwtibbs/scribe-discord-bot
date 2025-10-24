@@ -160,10 +160,12 @@ Optional environment variables:
 - Single-use enforcement: marked as used after successful login
 - Expired or used tokens rejected to prevent security vulnerabilities
 
-### Recording Sessions (In-Memory)
-- Active recording state tracked in memory via session-manager
-- Includes audio stream, campaign info, and start time
-- Cleared after `/stop` command completes upload
+### Recording Sessions (Database + In-Memory)
+- Active recording state tracked in both database and memory for reliability
+- Database persistence ensures recordings survive bot restarts
+- Each session includes: Discord user ID, guild ID, channel ID, campaign info, file path, start time
+- When `/stop` is called, checks database if not found in memory
+- Cleared from both database and memory after `/stop` command completes upload
 
 ### Pending Uploads (In-Memory with TTL)
 - Processed recordings waiting for user confirmation (Submit/Delete)
