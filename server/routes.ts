@@ -80,6 +80,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to debug campaign retrieval
+  app.get("/api/test-campaigns", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId parameter" });
+      }
+
+      // Get stored session directly by Discord user ID
+      const session = await storage.getDiscordSession(userId);
+
+      if (!session) {
+        return res.status(401).json({ error: "Not authenticated. Please use /setup in Discord to login." });
+      }
+
+      const ownerQuery = `${session.sub}::${session.username}`;
+      
+      console.log('🧪 TEST ENDPOINT - Session details:');
+      console.log(`  Discord User ID: ${userId}`);
+      console.log(`  Username: ${session.username}`);
+      console.log(`  Sub: ${session.sub}`);
+      console.log(`  Owner query: ${ownerQuery}`);
+
+      // Fetch campaigns from GraphQL using the composite owner format
+      const campaigns = await graphqlClient.getCampaignsByOwner(
+        ownerQuery, 
+        session.accessToken
+      );
+
+      const result = {
+        test: true,
+        session: {
+          discordUserId: userId,
+          username: session.username,
+          sub: session.sub,
+        },
+        ownerQuery,
+        campaignsFound: campaigns.length,
+        campaigns: campaigns.map(c => ({
+          id: c.id,
+          name: c.name,
+          owner: c.owner,
+          description: c.description,
+        })),
+      };
+
+      res.json(result);
+    } catch (error) {
+      console.error("Test campaigns error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch campaigns";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // Get campaigns for authenticated user
   app.get("/api/campaigns", async (req, res) => {
     try {
