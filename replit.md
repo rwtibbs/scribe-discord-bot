@@ -126,11 +126,17 @@ Optional environment variables:
 5. Bot:
    - Saves recording to temporary file
    - Converts PCM to MP3
-   - Creates session in GraphQL using stored Cognito sub
    - Uploads audio to S3
-   - Updates session with audio URL
-   - Sends confirmation message
-6. TabletopScribe's existing Lambda processing takes over
+   - Shows confirmation with Submit/Delete buttons
+6. User clicks **Submit**:
+   - Modal appears with pre-filled session name (editable)
+   - Session created in TabletopScribe GraphQL API
+   - Audio URL linked to session
+   - Local and S3 files cleaned up
+7. OR User clicks **Delete**:
+   - S3 file and local MP3 deleted
+   - Recording discarded without creating session
+8. TabletopScribe's existing Lambda processing takes over (if submitted)
 
 ## Recording Process
 
@@ -158,6 +164,13 @@ Optional environment variables:
 - Active recording state tracked in memory via session-manager
 - Includes audio stream, campaign info, and start time
 - Cleared after `/stop` command completes upload
+
+### Pending Uploads (In-Memory with TTL)
+- Processed recordings waiting for user confirmation (Submit/Delete)
+- Each entry contains: MP3 file path, S3 URL, duration, campaign info, timestamps
+- TTL: 30 minutes with cleanup running every 10 minutes
+- Automatic cleanup prevents orphaned S3 files and memory leaks
+- On cleanup: deletes S3 file, local MP3, and removes from map
 
 ## Security Features
 
