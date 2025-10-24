@@ -96,9 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated. Please use /setup in Discord to login." });
       }
 
-      // Fetch campaigns from GraphQL using the stored sub
+      // Fetch campaigns from GraphQL using the stored username
       const campaigns = await graphqlClient.getCampaignsByOwner(
-        session.sub, 
+        session.username, 
         session.accessToken
       );
 

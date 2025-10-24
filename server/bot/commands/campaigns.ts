@@ -27,7 +27,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     const campaigns = await graphqlClient.getCampaignsByOwner(
-      dbSession.sub,
+      dbSession.username,
       dbSession.accessToken
     );
 
