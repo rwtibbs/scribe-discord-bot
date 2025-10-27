@@ -99,40 +99,38 @@ async function convertPcmToAac(pcmPath: string, aacPath: string): Promise<void> 
 }
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  await interaction.deferReply();
-
-  // Get session from database
-  const dbSession = await storage.getDiscordSession(interaction.user.id);
-
-  if (!dbSession) {
-    const errorEmbed = new EmbedBuilder()
-      .setColor(DISCORD_COLORS.ERROR)
-      .setTitle('❌ Not Authenticated')
-      .setDescription('Please use `/setup` to login with your TabletopScribe account')
-      .setTimestamp();
-
-    await interaction.editReply({ embeds: [errorEmbed] });
-    return;
+  // CRITICAL: Defer IMMEDIATELY before any async operations to prevent Discord timeout
+  // Discord requires response within 3 seconds - don't do ANYTHING before this
+  try {
+    await interaction.deferReply();
+  } catch (error: any) {
+    console.error('Failed to defer /stop interaction (likely already expired):', error.message);
+    return; // Can't respond - interaction already expired
   }
 
-  // Check both in-memory and database for active recording
+  // Check in-memory first (fast, no database query)
   let recordingSession = sessionManager.getRecordingSession(interaction.user.id);
   
   // If not in memory, check database (in case bot restarted)
   if (!recordingSession) {
-    const dbRecording = await storage.getActiveRecording(interaction.user.id);
-    if (dbRecording) {
-      // Recreate session from database
-      recordingSession = {
-        discordId: dbRecording.discordUserId,
-        guildId: dbRecording.guildId,
-        channelId: dbRecording.channelId,
-        campaignId: dbRecording.campaignId,
-        campaignName: dbRecording.campaignName,
-        startedAt: dbRecording.startedAt,
-        filePath: dbRecording.filePath,
-      };
-      console.log(`🔄 Recovered recording session from database for user ${interaction.user.id}`);
+    try {
+      const dbRecording = await storage.getActiveRecording(interaction.user.id);
+      if (dbRecording) {
+        // Recreate session from database
+        recordingSession = {
+          discordId: dbRecording.discordUserId,
+          guildId: dbRecording.guildId,
+          channelId: dbRecording.channelId,
+          campaignId: dbRecording.campaignId,
+          campaignName: dbRecording.campaignName,
+          startedAt: dbRecording.startedAt,
+          filePath: dbRecording.filePath,
+        };
+        console.log(`🔄 Recovered recording session from database for user ${interaction.user.id}`);
+      }
+    } catch (dbError) {
+      console.error('Database error while fetching active recording:', dbError);
+      // Continue - will show "No Active Recording" if not in memory
     }
   }
 
@@ -141,6 +139,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setColor(DISCORD_COLORS.ERROR)
       .setTitle('❌ No Active Recording')
       .setDescription('You don\'t have an active recording. Use `/record` to start one.')
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [errorEmbed] });
+    return;
+  }
+
+  // Get user authentication (needed later for session creation)
+  let dbSession;
+  try {
+    dbSession = await storage.getDiscordSession(interaction.user.id);
+  } catch (dbError) {
+    console.error('Database error while fetching discord session:', dbError);
+  }
+
+  if (!dbSession) {
+    const errorEmbed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.ERROR)
+      .setTitle('❌ Not Authenticated')
+      .setDescription('Please use `/setup` to login with your TabletopScribe account')
       .setTimestamp();
 
     await interaction.editReply({ embeds: [errorEmbed] });
