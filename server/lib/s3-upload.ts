@@ -56,3 +56,16 @@ export async function deleteAudioFromS3(s3Url: string): Promise<void> {
   
   console.log(`✅ Delete complete: ${key}`);
 }
+
+export function generateFileName(campaignId: string, sessionId: string, extension: string): string {
+  // Remove leading dot from extension if present
+  const ext = extension.startsWith('.') ? extension.slice(1) : extension;
+  
+  // Generate standardized filename: campaign{ID}Session{ID}.ext
+  return `campaign${campaignId}Session${sessionId}.${ext}`;
+}
+
+export function getS3Url(fileName: string): string {
+  const key = `public/audioUploads/${fileName}`;
+  return `https://${config.s3Bucket}.s3.${config.region}.amazonaws.com/${key}`;
+}

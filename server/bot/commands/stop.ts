@@ -14,7 +14,7 @@ import {
 import { getVoiceConnection } from '@discordjs/voice';
 import { sessionManager } from '../session-manager';
 import { storage } from '../../storage';
-import { uploadAudioToS3, deleteAudioFromS3 } from '../../lib/s3-upload';
+import { uploadAudioToS3, deleteAudioFromS3, generateFileName } from '../../lib/s3-upload';
 import { graphqlClient } from '../../lib/graphql';
 import { DISCORD_COLORS } from '../types';
 import * as fs from 'fs';
@@ -470,17 +470,43 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
       throw new Error('Not authenticated. Please use /setup to login.');
     }
 
-    const transcriptionUrl = pending.audioUrl.replace('.m4a', '.txt');
-    
-    await graphqlClient.createSession({
+    // Step 1: Create session with temporary audioFile to get session ID
+    console.log('📝 Creating session to get ID...');
+    const createdSession = await graphqlClient.createSession({
       name: sessionName,
       duration: pending.duration,
-      audioFile: pending.audioUrl,
-      transcriptionFile: transcriptionUrl,
+      audioFile: 'temp.m4a', // Temporary placeholder
+      transcriptionFile: 'temp.txt',
       transcriptionStatus: 'UPLOADED',
       campaignSessionsId: pending.campaignId,
       date: pending.startedAt,
     }, dbSession.accessToken);
+
+    console.log(`✅ Session created with ID: ${createdSession.id}`);
+
+    // Step 2: Generate standardized filename using campaign ID and session ID
+    const properFileName = generateFileName(pending.campaignId, createdSession.id, 'm4a');
+    const properTranscriptionFileName = generateFileName(pending.campaignId, createdSession.id, 'txt');
+    
+    console.log(`📝 Generated filename: ${properFileName}`);
+
+    // Step 3: Upload file with correct filename
+    console.log('📤 Uploading file with standardized filename...');
+    await uploadAudioToS3(pending.aacFilePath, properFileName);
+
+    // Step 4: Delete the old file with wrong name from S3
+    console.log('🗑️ Removing temporary upload with old filename...');
+    await deleteAudioFromS3(pending.audioUrl);
+
+    // Step 5: Update session with correct audioFile (filename only, not URL)
+    console.log('🔄 Updating session with correct audioFile...');
+    await graphqlClient.updateSessionAudioFile(
+      createdSession.id,
+      properFileName, // Store filename only, not full URL
+      properTranscriptionFileName,
+      createdSession._version,
+      dbSession.accessToken
+    );
 
     // Clean up the AAC file
     if (fs.existsSync(pending.aacFilePath)) {
