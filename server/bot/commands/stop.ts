@@ -488,11 +488,15 @@ export async function handleDownloadButton(interaction: ButtonInteraction) {
     return;
   }
 
+  console.log(`📥 Download requested by ${interaction.user.tag}`);
+  console.log(`   File path: ${pending.aacFilePath}`);
+  console.log(`   File exists: ${fs.existsSync(pending.aacFilePath)}`);
+  
   // Check if file exists
   if (!fs.existsSync(pending.aacFilePath)) {
     try {
       await interaction.reply({
-        content: '❌ Recording file not found. It may have been cleaned up.',
+        content: `❌ Recording file not found at path: \`${pending.aacFilePath}\`\n\nThe file may have been cleaned up. Please use the S3 download link instead.`,
         ephemeral: true
       });
     } catch (error: any) {
@@ -501,10 +505,14 @@ export async function handleDownloadButton(interaction: ButtonInteraction) {
     return;
   }
 
+  // Get file stats for debugging
+  const stats = fs.statSync(pending.aacFilePath);
+  console.log(`   File size: ${stats.size} bytes (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+
   try {
     // Send the file as an attachment
     await interaction.reply({
-      content: '📥 Here is your recording file!',
+      content: `📥 Here is your recording file!\n**Size:** ${(stats.size / 1024 / 1024).toFixed(2)} MB`,
       files: [{
         attachment: pending.aacFilePath,
         name: `${pending.campaignName.replace(/\s+/g, '_')}_recording.m4a`
@@ -512,22 +520,22 @@ export async function handleDownloadButton(interaction: ButtonInteraction) {
       ephemeral: true
     });
 
-    console.log(`📥 Recording downloaded by user ${interaction.user.tag}`);
+    console.log(`✅ Recording sent successfully to ${interaction.user.tag}`);
     
-    // Clean up file after download
+    // Clean up file after download (wait longer to ensure Discord has it)
     setTimeout(() => {
       if (fs.existsSync(pending.aacFilePath)) {
         fs.unlinkSync(pending.aacFilePath);
         console.log(`🗑️ Cleaned up file after download: ${pending.aacFilePath}`);
       }
       pendingUploads.delete(interaction.user.id);
-    }, 5000); // Wait 5 seconds to ensure file is sent
+    }, 10000); // Wait 10 seconds to ensure file is fully sent
   } catch (error: any) {
     console.error('Download error:', error);
     
     try {
       await interaction.reply({
-        content: '❌ Failed to send the file. Please try again.',
+        content: `❌ Failed to send the file: ${error.message}\n\nPlease use the S3 download link instead.`,
         ephemeral: true
       });
     } catch (replyError: any) {
