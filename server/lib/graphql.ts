@@ -54,10 +54,11 @@ class GraphQLClient {
 
   async getCampaignsByOwner(owner: string, accessToken?: string): Promise<Campaign[]> {
     console.log(`🔍 Fetching campaigns for owner: "${owner}"`);
+    console.log(`🔍 Owner bytes (hex): ${Buffer.from(owner).toString('hex')}`);
     console.log(`🔍 Using accessToken: ${accessToken ? 'YES' : 'NO (using API key)'}`);
     
     const query = `
-      query GetCampaignsByOwner($owner: String!) {
+      query GetCampaignsByOwner($owner: String!, $nextToken: String) {
         listCampaigns(
           filter: { 
             or: [
@@ -66,6 +67,7 @@ class GraphQLClient {
             ]
           }
           limit: 100
+          nextToken: $nextToken
         ) {
           items {
             id
@@ -74,26 +76,62 @@ class GraphQLClient {
             owner
             _deleted
           }
+          nextToken
         }
       }
     `;
 
-    const result = await this.query<{ listCampaigns: { items: Campaign[] } }>(
-      query, 
-      { owner }, 
-      accessToken
-    );
+    let allCampaigns: Campaign[] = [];
+    let nextToken: string | null = null;
+    let pageNumber = 0;
+
+    // Loop through all pages
+    do {
+      pageNumber++;
+      console.log(`📄 Fetching page ${pageNumber}...`);
+      
+      const result: { listCampaigns: { items: Campaign[]; nextToken?: string } } = await this.query<{ listCampaigns: { items: Campaign[]; nextToken?: string } }>(
+        query, 
+        { owner, nextToken }, 
+        accessToken
+      );
+      
+      // Log raw response for debugging
+      console.log(`📊 Page ${pageNumber} - Raw response:`, JSON.stringify({
+        itemsCount: result.listCampaigns.items.length,
+        hasNextToken: !!result.listCampaigns.nextToken,
+        nextToken: result.listCampaigns.nextToken
+      }));
+      
+      // Log each campaign with byte-level comparison
+      result.listCampaigns.items.forEach((campaign: Campaign, index: number) => {
+        const ownerMatch = campaign.owner === owner;
+        const ownerBytes = Buffer.from(campaign.owner).toString('hex');
+        const expectedBytes = Buffer.from(owner).toString('hex');
+        
+        console.log(`  Campaign ${index + 1} (Page ${pageNumber}): "${campaign.name}" (ID: ${campaign.id})`);
+        console.log(`    Owner: "${campaign.owner}"`);
+        console.log(`    Owner bytes: ${ownerBytes}`);
+        console.log(`    Match: ${ownerMatch ? '✅ EXACT' : '❌ NO'}`);
+        if (!ownerMatch) {
+          console.log(`    Expected: "${owner}"`);
+          console.log(`    Expected bytes: ${expectedBytes}`);
+        }
+        console.log(`    Deleted: ${campaign._deleted ? 'YES' : 'NO'}`);
+      });
+      
+      allCampaigns = allCampaigns.concat(result.listCampaigns.items);
+      nextToken = result.listCampaigns.nextToken || null;
+      
+      if (nextToken) {
+        console.log(`➡️  More results available, fetching next page...`);
+      }
+      
+    } while (nextToken);
     
-    console.log(`📊 GraphQL returned ${result.listCampaigns.items.length} total campaigns`);
+    console.log(`📊 Total campaigns fetched across ${pageNumber} page(s): ${allCampaigns.length}`);
     
-    // Log each campaign with its details
-    result.listCampaigns.items.forEach((campaign, index) => {
-      console.log(`  Campaign ${index + 1}: "${campaign.name}" (ID: ${campaign.id})`);
-      console.log(`    Owner: "${campaign.owner}"`);
-      console.log(`    Deleted: ${campaign._deleted ? 'YES' : 'NO'}`);
-    });
-    
-    const filtered = result.listCampaigns.items.filter(campaign => !campaign._deleted);
+    const filtered = allCampaigns.filter(campaign => !campaign._deleted);
     console.log(`✅ After filtering deleted: ${filtered.length} campaigns remaining`);
     
     // Log the final campaigns being returned
