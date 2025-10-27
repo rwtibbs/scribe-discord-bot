@@ -300,13 +300,48 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 // Handle submit button - show modal for session name
 export async function handleSubmitButton(interaction: ButtonInteraction) {
-  // Check both in-memory and database for pending upload
+  // Check in-memory FIRST (synchronous, fast)
   let pending = pendingUploads.get(interaction.user.id);
   
-  // If not in memory, check database (in case bot restarted)
-  if (!pending) {
+  // If in memory, show modal immediately (no database delay)
+  if (pending) {
+    const modal = new ModalBuilder()
+      .setCustomId('session_name_modal')
+      .setTitle('Name Your Session');
+
+    const sessionNameInput = new TextInputBuilder()
+      .setCustomId('session_name')
+      .setLabel('Session Name')
+      .setStyle(TextInputStyle.Short)
+      .setPlaceholder('e.g., Session 1: The Adventure Begins')
+      .setRequired(true)
+      .setMaxLength(100);
+
+    const row = new ActionRowBuilder<TextInputBuilder>().addComponents(sessionNameInput);
+    modal.addComponents(row);
+
+    try {
+      await interaction.showModal(modal);
+    } catch (error: any) {
+      console.error('Failed to show modal:', error.message);
+    }
+    return;
+  }
+
+  // NOT in memory - must defer FIRST before database lookup
+  // RULE #1: DEFER FIRST - Always acknowledge Discord within 1 second
+  try {
+    await interaction.deferReply({ ephemeral: true });
+  } catch (error: any) {
+    console.error('Failed to defer submit button (interaction expired):', error.message);
+    return;
+  }
+
+  // Now safe to do database lookup (already acknowledged Discord)
+  try {
     const dbPending = await storage.getPendingUpload(interaction.user.id);
     if (dbPending) {
+      // Restore to memory
       pending = {
         aacFilePath: dbPending.aacFilePath,
         audioUrl: dbPending.audioUrl,
@@ -319,70 +354,63 @@ export async function handleSubmitButton(interaction: ButtonInteraction) {
       };
       pendingUploads.set(interaction.user.id, pending);
       console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+      
+      // Can't show modal after defer - inform user to try again
+      await interaction.editReply({
+        content: '✅ Recording recovered. Please click Submit again to continue.'
+      });
+      return;
     }
+  } catch (dbError) {
+    console.error('Database error fetching pending upload:', dbError);
   }
   
-  if (!pending) {
-    await interaction.reply({
-      content: '❌ No pending recording found. Please record again.',
-      ephemeral: true
-    });
-    return;
-  }
-
-  // Show modal to collect session name
-  const modal = new ModalBuilder()
-    .setCustomId('session_name_modal')
-    .setTitle('Name Your Session');
-
-  const sessionNameInput = new TextInputBuilder()
-    .setCustomId('session_name')
-    .setLabel('Session Name')
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder(`${pending.campaignName} - Discord Recording`)
-    .setValue(`${pending.campaignName} - Discord Recording`)
-    .setRequired(true)
-    .setMaxLength(100);
-
-  const row = new ActionRowBuilder<TextInputBuilder>().addComponents(sessionNameInput);
-  modal.addComponents(row);
-
-  await interaction.showModal(modal);
+  // No pending found
+  await interaction.editReply({
+    content: '❌ No pending recording found. Please record again.'
+  });
 }
 
 // Handle delete button - remove recording
 export async function handleDeleteButton(interaction: ButtonInteraction) {
-  // Check both in-memory and database for pending upload
+  // DEFER FIRST - Acknowledge button click immediately
+  try {
+    await interaction.deferUpdate();
+  } catch (error: any) {
+    console.error('Failed to defer delete button (interaction expired):', error.message);
+    return;
+  }
+
+  // Check in-memory first (fast)
   let pending = pendingUploads.get(interaction.user.id);
   
   // If not in memory, check database (in case bot restarted)
   if (!pending) {
-    const dbPending = await storage.getPendingUpload(interaction.user.id);
-    if (dbPending) {
-      pending = {
-        aacFilePath: dbPending.aacFilePath,
-        audioUrl: dbPending.audioUrl,
-        duration: parseInt(dbPending.duration),
-        fileSizeMB: dbPending.fileSizeMB,
-        campaignId: dbPending.campaignId,
-        campaignName: dbPending.campaignName,
-        startedAt: dbPending.startedAt,
-        createdAt: dbPending.createdAt,
-      };
-      pendingUploads.set(interaction.user.id, pending);
-      console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+    try {
+      const dbPending = await storage.getPendingUpload(interaction.user.id);
+      if (dbPending) {
+        pending = {
+          aacFilePath: dbPending.aacFilePath,
+          audioUrl: dbPending.audioUrl,
+          duration: parseInt(dbPending.duration),
+          fileSizeMB: dbPending.fileSizeMB,
+          campaignId: dbPending.campaignId,
+          campaignName: dbPending.campaignName,
+          startedAt: dbPending.startedAt,
+          createdAt: dbPending.createdAt,
+        };
+        pendingUploads.set(interaction.user.id, pending);
+        console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+      }
+    } catch (dbError) {
+      console.error('Database error fetching pending upload:', dbError);
     }
   }
   
   if (!pending) {
-    await interaction.reply({
-      content: '❌ No pending recording found.',
-      ephemeral: true
-    });
+    console.error('No pending upload found for delete button');
     return;
   }
-
-  await interaction.deferUpdate();
 
   try {
     // Delete the S3 file
@@ -445,37 +473,45 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
 
 // Handle modal submission - create session
 export async function handleSessionNameModal(interaction: ModalSubmitInteraction) {
-  // Check both in-memory and database for pending upload
+  // DEFER FIRST - Acknowledge modal submission immediately
+  try {
+    await interaction.deferUpdate();
+  } catch (error: any) {
+    console.error('Failed to defer modal (interaction expired):', error.message);
+    return;
+  }
+
+  // Check in-memory first (fast)
   let pending = pendingUploads.get(interaction.user.id);
   
   // If not in memory, check database (in case bot restarted)
   if (!pending) {
-    const dbPending = await storage.getPendingUpload(interaction.user.id);
-    if (dbPending) {
-      pending = {
-        aacFilePath: dbPending.aacFilePath,
-        audioUrl: dbPending.audioUrl,
-        duration: parseInt(dbPending.duration),
-        fileSizeMB: dbPending.fileSizeMB,
-        campaignId: dbPending.campaignId,
-        campaignName: dbPending.campaignName,
-        startedAt: dbPending.startedAt,
-        createdAt: dbPending.createdAt,
-      };
-      pendingUploads.set(interaction.user.id, pending);
-      console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+    try {
+      const dbPending = await storage.getPendingUpload(interaction.user.id);
+      if (dbPending) {
+        pending = {
+          aacFilePath: dbPending.aacFilePath,
+          audioUrl: dbPending.audioUrl,
+          duration: parseInt(dbPending.duration),
+          fileSizeMB: dbPending.fileSizeMB,
+          campaignId: dbPending.campaignId,
+          campaignName: dbPending.campaignName,
+          startedAt: dbPending.startedAt,
+          createdAt: dbPending.createdAt,
+        };
+        pendingUploads.set(interaction.user.id, pending);
+        console.log(`🔄 Recovered pending upload from database for user ${interaction.user.id}`);
+      }
+    } catch (dbError) {
+      console.error('Database error fetching pending upload:', dbError);
     }
   }
   
   if (!pending) {
-    await interaction.reply({
-      content: '❌ No pending recording found. Please record again.',
-      ephemeral: true
-    });
+    // Can't use reply here since we already deferred
+    console.error('No pending upload found for user after modal submission');
     return;
   }
-
-  await interaction.deferUpdate();
 
   const sessionName = interaction.fields.getTextInputValue('session_name');
 

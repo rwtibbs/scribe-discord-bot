@@ -35,10 +35,21 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  await interaction.deferReply();
+  // RULE #1: DEFER FIRST - Always acknowledge Discord within 1 second
+  try {
+    await interaction.deferReply();
+  } catch (error: any) {
+    console.error('Failed to defer /record (interaction expired):', error.message);
+    return; // Can't respond - interaction already expired
+  }
 
   // Get session from database
-  const dbSession = await storage.getDiscordSession(interaction.user.id);
+  let dbSession;
+  try {
+    dbSession = await storage.getDiscordSession(interaction.user.id);
+  } catch (dbError) {
+    console.error('Database error fetching session:', dbError);
+  }
 
   if (!dbSession) {
     const errorEmbed = new EmbedBuilder()

@@ -32,7 +32,13 @@ function getBaseUrl(): string {
 }
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  await interaction.deferReply({ ephemeral: true });
+  // RULE #1: DEFER FIRST - Always acknowledge Discord within 1 second
+  try {
+    await interaction.deferReply({ ephemeral: true });
+  } catch (error: any) {
+    console.error('Failed to defer /setup (interaction expired):', error.message);
+    return; // Can't respond - interaction already expired
+  }
 
   try {
     const discordUserId = interaction.user.id;
