@@ -143,13 +143,16 @@ export class MemStorage implements IStorage {
 }
 
 export class DbStorage implements IStorage {
-  private db;
-
-  constructor() {
-    const pool = new Pool({ 
-      connectionString: process.env.DATABASE_URL
-    });
-    this.db = drizzle(pool);
+  private _db: ReturnType<typeof drizzle> | null = null;
+  
+  private get db() {
+    if (!this._db) {
+      const pool = new Pool({ 
+        connectionString: process.env.DATABASE_URL
+      });
+      this._db = drizzle(pool);
+    }
+    return this._db;
   }
 
   async getUser(id: string): Promise<User | undefined> {
