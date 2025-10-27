@@ -6,6 +6,25 @@ A Discord bot that allows authenticated TabletopScribe users to record voice cha
 
 This bot integrates with your existing TabletopScribe infrastructure (AWS Cognito, S3, AppSync GraphQL) to provide seamless voice recording capabilities from Discord. Features secure web-based authentication where users authenticate via a browser (instead of typing credentials in Discord) and can copy campaign-specific commands to clipboard.
 
+## 🚀 Deployment
+
+**Recommended:** Deploy to **Railway** for full UDP support and reliable voice recording.
+
+See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for complete deployment instructions.
+
+**Why Railway?**
+- ✅ Full UDP support (required for Discord voice)
+- ✅ PostgreSQL database included
+- ✅ Automatic deployments from GitHub
+- ✅ Built-in monitoring and logs
+- ✅ $5/month free tier
+
+**Replit Limitations:**
+- ❌ Reserved VMs may not support outbound UDP
+- ❌ Voice connections timeout after 20-30 seconds
+- ✅ Web authentication works
+- ✅ Database and API integrations work
+
 ## Project Structure
 
 ```

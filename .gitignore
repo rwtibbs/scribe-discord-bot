@@ -4,3 +4,18 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables & secrets
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# Recordings & temporary files
+recordings/
+*.pcm
+*.m4a
+
+# Railway
+.railway
