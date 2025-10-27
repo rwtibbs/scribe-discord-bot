@@ -527,9 +527,9 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
     console.log('📝 Creating session to get ID...');
     const createdSession = await graphqlClient.createSession({
       name: sessionName,
-      duration: pending.duration,
+      duration: pending.duration * 1000, // Convert seconds to milliseconds
       audioFile: 'temp.m4a', // Temporary placeholder
-      transcriptionFile: 'temp.txt',
+      transcriptionFile: 'temp.json',
       transcriptionStatus: 'UPLOADED',
       campaignSessionsId: pending.campaignId,
       date: pending.startedAt,
@@ -539,7 +539,7 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
 
     // Step 2: Generate standardized filename using campaign ID and session ID
     const properFileName = generateFileName(pending.campaignId, createdSession.id, 'm4a');
-    const properTranscriptionFileName = generateFileName(pending.campaignId, createdSession.id, 'txt');
+    const properTranscriptionFileName = generateFileName(pending.campaignId, createdSession.id, 'json');
     
     console.log(`📝 Generated filename: ${properFileName}`);
 
