@@ -14,7 +14,7 @@ import {
 import { getVoiceConnection } from '@discordjs/voice';
 import { sessionManager } from '../session-manager';
 import { storage } from '../../storage';
-import { uploadAudioToS3, deleteAudioFromS3, generateFileName } from '../../lib/s3-upload';
+import { uploadAudioToS3, deleteAudioFromS3, generateFileName, getS3Url } from '../../lib/s3-upload';
 import { graphqlClient } from '../../lib/graphql';
 import { DISCORD_COLORS } from '../types';
 import * as fs from 'fs';
@@ -471,6 +471,71 @@ export async function handleDeleteButton(interaction: ButtonInteraction) {
   }
 }
 
+// Handle download button - send file to user
+export async function handleDownloadButton(interaction: ButtonInteraction) {
+  // Check in-memory first (fast)
+  const pending = pendingUploads.get(interaction.user.id);
+  
+  if (!pending) {
+    try {
+      await interaction.reply({
+        content: '❌ Recording no longer available for download. It may have been cleaned up.',
+        ephemeral: true
+      });
+    } catch (error: any) {
+      console.error('Failed to respond to download button:', error.message);
+    }
+    return;
+  }
+
+  // Check if file exists
+  if (!fs.existsSync(pending.aacFilePath)) {
+    try {
+      await interaction.reply({
+        content: '❌ Recording file not found. It may have been cleaned up.',
+        ephemeral: true
+      });
+    } catch (error: any) {
+      console.error('Failed to respond to download button:', error.message);
+    }
+    return;
+  }
+
+  try {
+    // Send the file as an attachment
+    await interaction.reply({
+      content: '📥 Here is your recording file!',
+      files: [{
+        attachment: pending.aacFilePath,
+        name: `${pending.campaignName.replace(/\s+/g, '_')}_recording.m4a`
+      }],
+      ephemeral: true
+    });
+
+    console.log(`📥 Recording downloaded by user ${interaction.user.tag}`);
+    
+    // Clean up file after download
+    setTimeout(() => {
+      if (fs.existsSync(pending.aacFilePath)) {
+        fs.unlinkSync(pending.aacFilePath);
+        console.log(`🗑️ Cleaned up file after download: ${pending.aacFilePath}`);
+      }
+      pendingUploads.delete(interaction.user.id);
+    }, 5000); // Wait 5 seconds to ensure file is sent
+  } catch (error: any) {
+    console.error('Download error:', error);
+    
+    try {
+      await interaction.reply({
+        content: '❌ Failed to send the file. Please try again.',
+        ephemeral: true
+      });
+    } catch (replyError: any) {
+      console.error('Failed to respond to download error:', replyError.message);
+    }
+  }
+}
+
 // Handle modal submission - create session
 export async function handleSessionNameModal(interaction: ModalSubmitInteraction) {
   // DEFER FIRST - Acknowledge modal submission immediately
@@ -561,15 +626,22 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
       dbSession.accessToken
     );
 
-    // Clean up the AAC file
-    if (fs.existsSync(pending.aacFilePath)) {
-      fs.unlinkSync(pending.aacFilePath);
-    }
-
-    pendingUploads.delete(interaction.user.id);
-    
-    // Also remove from database
-    await storage.deletePendingUpload(interaction.user.id);
+    // Keep file temporarily for download option
+    // Store file path for download handler
+    const downloadData = {
+      aacFilePath: pending.aacFilePath,
+      sessionName,
+      campaignName: pending.campaignName,
+    };
+    pendingUploads.set(interaction.user.id, {
+      ...downloadData,
+      duration: pending.duration,
+      fileSizeMB: pending.fileSizeMB,
+      campaignId: pending.campaignId,
+      audioUrl: getS3Url(properFileName),
+      startedAt: pending.startedAt,
+      createdAt: pending.createdAt,
+    });
 
     const successEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.SUCCESS)
@@ -584,9 +656,18 @@ export async function handleSessionNameModal(interaction: ModalSubmitInteraction
       .setFooter({ text: 'Processing will continue automatically in TabletopScribe' })
       .setTimestamp();
 
+    const downloadButton = new ButtonBuilder()
+      .setCustomId('download_recording')
+      .setLabel('Download File')
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji('📥');
+
+    const row = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(downloadButton);
+
     await interaction.editReply({
       embeds: [successEmbed],
-      components: []
+      components: [row]
     });
 
     console.log(`✅ Session "${sessionName}" uploaded successfully by user ${interaction.user.tag}`);

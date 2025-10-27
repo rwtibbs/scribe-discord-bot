@@ -4,7 +4,7 @@ import * as setupCommand from './commands/setup';
 import * as campaignsCommand from './commands/campaigns';
 import * as recordCommand from './commands/record';
 import * as stopCommand from './commands/stop';
-import { handleSubmitButton, handleDeleteButton, handleSessionNameModal } from './commands/stop';
+import { handleSubmitButton, handleDeleteButton, handleDownloadButton, handleSessionNameModal } from './commands/stop';
 
 const commands = [
   loginCommand,
@@ -74,6 +74,8 @@ export class DiscordBot {
             await handleSubmitButton(interaction);
           } else if (interaction.customId === 'delete_recording') {
             await handleDeleteButton(interaction);
+          } else if (interaction.customId === 'download_recording') {
+            await handleDownloadButton(interaction);
           }
         } catch (error) {
           console.error('Button interaction error:', error);
