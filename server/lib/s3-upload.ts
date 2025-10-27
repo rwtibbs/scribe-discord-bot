@@ -25,7 +25,7 @@ export async function uploadAudioToS3(
     Key: key,
     Body: fileContent,
     ContentType: 'audio/mpeg',
-    ACL: 'public-read', // Make file publicly accessible
+    // Note: ACL removed - bucket has ACLs disabled. Files are accessible via bucket policy.
   };
 
   await s3.upload(params).promise();
