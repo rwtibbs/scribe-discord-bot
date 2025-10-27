@@ -25,6 +25,7 @@ export async function uploadAudioToS3(
     Key: key,
     Body: fileContent,
     ContentType: 'audio/mpeg',
+    ACL: 'public-read', // Make file publicly accessible
   };
 
   await s3.upload(params).promise();
