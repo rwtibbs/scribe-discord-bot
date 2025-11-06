@@ -92,8 +92,9 @@ export const data = new SlashCommandBuilder()
 async function convertPcmToAac(pcmPath: string, aacPath: string): Promise<void> {
   const ffmpegPath = require('ffmpeg-static');
   
-  // Convert to AAC at 96 kbps mono for efficient voice recording
-  const command = `${ffmpegPath} -f s16le -ar 48000 -ac 2 -i "${pcmPath}" -codec:a aac -b:a 96k -ac 1 "${aacPath}"`;
+  // Convert to AAC at 128 kbps mono for high-quality voice recording
+  // Increased from 96k to 128k for better intelligibility
+  const command = `${ffmpegPath} -f s16le -ar 48000 -ac 2 -i "${pcmPath}" -codec:a aac -b:a 128k -ac 1 "${aacPath}"`;
   
   await execAsync(command);
 }
