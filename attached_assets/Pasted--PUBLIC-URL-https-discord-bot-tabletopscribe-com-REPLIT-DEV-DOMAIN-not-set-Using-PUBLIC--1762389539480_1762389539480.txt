@@ -1,0 +1,71 @@
+
+  PUBLIC_URL: https://discord-bot.tabletopscribe.com
+  REPLIT_DEV_DOMAIN: (not set)
+✅ Using PUBLIC_URL: https://discord-bot.tabletopscribe.com
+Setup command error: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+      issuer: [Object: null prototype],
+      subjectaltname: 'DNS:*.up.railway.app',
+      infoAccess: [Object: null prototype],
+      ca: false,
+      modulus: 'A2FF18A851B687A03CFCD4D306C7AD5C927990FD71C9095E70CAD578B49083CDDF7E63DE37B68201FEC1E396836C6848B4B4EEDD02B7607151CDBA80479C254797B3C00701DFB881FB21B2E3936FF26330B4DE5182D03C55EF66D123F8C656DBAE2245B48522593FD1F546F81B4CD762676E2655103A20FB7AB5C2029A3631B094B4A276602E7023F87E332961FAA89925C13C1FBC4322C5D7C61DAFE377708F1C92E30B05789D221172FF31A6B08A37A58BF13EC8D94D8920DA19A52ED7C9A5FFA08DCED4F9EAED78732121D90C8C5F632BBE71AD272A656EE0EDFAAEA6A8B9FAC36A9E852D920D9910CC356FD9C91DC1B5859399A2970E86C5E4E3F1AEFF555E62A448B6E1FC9E7F581DAACCA3FD4419F77A105EFE5A3C1E428E0DFA61615682CCCEF80D7486F92E32697AA251669A60EE80222DD382E10401EF78E015235A17818027ECAF94897B59BE7D51B3D2070F3E179F5A7E90778EC3B09D8619FB45785EC397DA788E0E880C7D2C201B8AB83884CA43D5823EC7E73D1DA7F8D54DB4FA53FAB01EA3C9835AFE6A2BA18F1B8B2A66770FD590BCBEE5068B114D9594372F32F320BBB2836D930E4B05E6DA6F5C326EB4E09D91A9509FA646D6DB95823D3EACE446E319A3F13946E94E10541B5F44D8153F3D37DA3D4F4FB0A25545BCDC488CF6996E45145B5760FA2FCC80EF3BB43B08B5EC247C8D6BAC031656989849',
+      bits: 4096,
+      exponent: '0x10001',
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://switchback.proxy.rlwy.net/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+      pubkey: <Buffer 30 82 02 22 30 0d 06 09 2a 86 48 86 f7 0d 01 01 01 05 00 03 82 02 0f 00 30 82 02 0a 02 82 02 01 00 a2 ff 18 a8 51 b6 87 a0 3c fc d4 d3 06 c7 ad 5c 92 ... 500 more bytes>,
+      valid_from: 'Oct  6 16:07:50 2025 GMT',
+      valid_to: 'Jan  4 16:07:49 2026 GMT',
+      fingerprint: '13:D9:3A:04:CB:01:E7:D5:0F:88:1B:AA:37:95:69:DB:83:9F:AA:EE',
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error [ERR_TLS_CERT_ALTNAME_INVALID]: Hostname/IP does not match certificate's altnames: Host: switchback.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app
+      at Object.checkServerIdentity (node:tls:456:12)
+      at TLSSocket.onConnectSecure (node:_tls_wrap:1689:27)
+      at TLSSocket.emit (node:events:519:28)
+      at TLSSocket.emit (node:domain:489:12)
+      at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+      at ssl.onhandshakedone (node:_tls_wrap:864:12) {
+    code: 'ERR_TLS_CERT_ALTNAME_INVALID',
+    reason: "Host: switchback.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app",
+    host: 'switchback.proxy.rlwy.net',
+    cert: {
+      subject: [Object: null prototype],
+}
+      fingerprint256: '4E:E4:AD:B2:CF:F9:E4:7C:44:B4:A7:2F:C2:C1:34:58:4C:22:5C:A0:4F:FA:C2:8E:DE:02:77:63:67:F6:1C:F1',
+      fingerprint512: 'B9:21:13:F5:1A:F3:34:72:D3:A4:76:46:EB:2E:6D:3A:D1:1C:E5:BC:6A:06:B0:C4:AE:BE:53:BE:07:0D:FD:50:D0:36:86:9A:DE:45:4A:12:08:D3:FD:CC:8D:9B:EE:92:B8:A6:F6:30:C8:FB:2D:33:7A:67:73:23:39:73:7F:DA',
+      ext_key_usage: [Array],
+      serialNumber: '061C067BB5EE06F3113CE6690BE9B50F603D',
+      raw: <Buffer 30 82 05 fc 30 82 04 e4 a0 03 02 01 02 02 12 06 1c 06 7b b5 ee 06 f3 11 3c e6 69 0b e9 b5 0f 60 3d 30 0d 06 09 2a 86 48 86 f7 0d 01 01 0b 05 00 30 33 ... 1486 more bytes>,
+      issuerCertificate: [Object]
+    }
+  },
+  [Symbol(kMessage)]: "Hostname/IP does not match certificate's altnames: Host: switchback.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app"

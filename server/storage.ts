@@ -1,12 +1,8 @@
 import { type User, type InsertUser, type DiscordSession, type InsertDiscordSession, type SetupToken, type InsertSetupToken, type ActiveRecording, type InsertActiveRecording, type PendingUpload, type InsertPendingUpload, users, discordSessions, setupTokens, activeRecordings, pendingUploads } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { drizzle } from "drizzle-orm/neon-serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { eq, and, gt } from "drizzle-orm";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
-
-// Configure WebSocket for Neon serverless driver in Node.js
-neonConfig.webSocketConstructor = ws;
+import { Pool } from "pg";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
