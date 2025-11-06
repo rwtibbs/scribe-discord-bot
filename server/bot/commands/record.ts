@@ -134,9 +134,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       channelId: voiceChannel.id,
       guildId: voiceChannel.guild.id,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator as any,
-      selfDeaf: false,
-      selfMute: true,
-      debug: false,
+      selfDeaf: false, // CRITICAL: Must be false to receive audio
+      selfMute: true,  // We're not transmitting, only receiving
+      debug: true,     // Enable debug logging to see what's happening
     });
 
     // Log connection state changes for debugging
@@ -174,6 +174,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const receiver = connection.receiver;
     
     console.log(`📡 Voice receiver created, listening for speaking events...`);
+    
+    // Give the voice connection time to fully establish before subscribing
+    // Discord needs a moment to set up the UDP connection for receiving audio
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log(`⏰ Connection stabilized, ready to subscribe to users`);
 
     const recordingDir = path.join(process.cwd(), 'recordings');
     if (!fs.existsSync(recordingDir)) {
@@ -311,11 +316,18 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         channels: 2,
         rate: 48000,
       });
+      
+      console.log(`🎧 Created Opus decoder for user ${userId}`);
 
       // Initialize buffer queue for this user
       if (!userBuffers.has(userId)) {
         userBuffers.set(userId, []);
       }
+      
+      // Log raw audio stream data
+      audioStream.on('data', (chunk: Buffer) => {
+        console.log(`🔊 Raw audio chunk from user ${userId}: ${chunk.length} bytes`);
+      });
 
       // When decoder produces PCM data, add to user's buffer queue
       let chunkCount = 0;
