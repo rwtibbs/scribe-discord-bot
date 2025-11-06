@@ -1,9 +1,11 @@
 import { UserSession, RecordingSession } from './types';
+import type { WriteStream } from 'fs';
 
 class SessionManager {
   private userSessions: Map<string, UserSession> = new Map();
   private recordingSessions: Map<string, RecordingSession> = new Map();
   private mixerIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private writeStreams: Map<string, WriteStream> = new Map();
 
   setUserSession(discordId: string, session: UserSession): void {
     this.userSessions.set(discordId, session);
@@ -63,6 +65,28 @@ class SessionManager {
       this.mixerIntervals.delete(discordId);
       console.log(`🛑 Cleared mixer interval for Discord user: ${discordId}`);
     }
+  }
+
+  setWriteStream(discordId: string, stream: WriteStream): void {
+    // Close existing stream if any
+    this.closeWriteStream(discordId);
+    this.writeStreams.set(discordId, stream);
+    console.log(`💾 Set write stream for Discord user: ${discordId}`);
+  }
+
+  closeWriteStream(discordId: string): Promise<void> {
+    return new Promise((resolve) => {
+      const stream = this.writeStreams.get(discordId);
+      if (stream) {
+        stream.end(() => {
+          this.writeStreams.delete(discordId);
+          console.log(`✅ Closed and flushed write stream for Discord user: ${discordId}`);
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
   }
 }
 

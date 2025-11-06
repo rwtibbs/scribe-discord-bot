@@ -171,6 +171,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (connection) {
       connection.destroy();
     }
+    
+    // CRITICAL: Close WriteStream to flush all buffered data to disk
+    // Without this, the PCM file will be zero bytes!
+    await sessionManager.closeWriteStream(interaction.user.id);
+    
+    // Clear mixer interval to stop audio processing
+    sessionManager.clearMixerInterval(interaction.user.id);
 
     const duration = Math.floor((Date.now() - recordingSession.startedAt.getTime()) / 1000);
 
@@ -237,7 +244,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     sessionManager.endRecording(interaction.user.id);
-    sessionManager.clearMixerInterval(interaction.user.id);
     
     // Also remove active recording from database
     await storage.deleteActiveRecording(interaction.user.id);

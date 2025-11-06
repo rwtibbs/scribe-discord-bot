@@ -206,6 +206,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     const writeStream = createWriteStream(filePath);
+    sessionManager.setWriteStream(interaction.user.id, writeStream);
     
     // Audio mixer: Combines PCM data from multiple speakers
     // Maps userId -> Buffer[] (queued PCM chunks)
@@ -221,6 +222,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     
     // Mixer interval: every 20ms, mix all available audio and write to file
     // Register immediately to prevent resource leaks
+    let mixCount = 0;
     const mixerInterval = setInterval(() => {
       // Collect one frame from each active user
       const frames: Buffer[] = [];
@@ -236,6 +238,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
       
       if (frames.length === 0) return; // Nothing to mix
+      
+      mixCount++;
+      if (mixCount % 50 === 0) {
+        console.log(`🎵 Mixer: Mixed ${mixCount} frames from ${frames.length} speakers, total buffers queued: ${Array.from(userBuffers.values()).reduce((sum, b) => sum + b.length, 0)}`);
+      }
       
       // Mix the frames by summing and normalizing samples
       const maxLength = Math.max(...frames.map(f => f.length));
@@ -266,7 +273,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
       
       // Write mixed audio to file
-      writeStream.write(mixed);
+      const written = writeStream.write(mixed);
+      if (mixCount === 1) {
+        console.log(`✍️ First write to ${filePath}: ${mixed.length} bytes, success: ${written}`);
+      }
     }, FRAME_DURATION_MS);
     
     // Register mixer interval for cleanup
@@ -299,10 +309,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
 
       // When decoder produces PCM data, add to user's buffer queue
+      let chunkCount = 0;
       opusDecoder.on('data', (pcmChunk: Buffer) => {
         const buffers = userBuffers.get(userId);
         if (buffers) {
           buffers.push(pcmChunk);
+          chunkCount++;
+          if (chunkCount % 50 === 0) {
+            console.log(`📦 User ${userId}: Received ${chunkCount} PCM chunks (latest: ${pcmChunk.length} bytes), queue depth: ${buffers.length}`);
+          }
+        } else {
+          console.warn(`⚠️ User ${userId}: No buffer queue found for PCM chunk`);
         }
       });
 
@@ -346,7 +363,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (error: any) {
     console.error('Record error:', error);
     
-    // Clean up mixer interval if it was created
+    // Clean up resources if recording failed
+    await sessionManager.closeWriteStream(interaction.user.id);
     sessionManager.clearMixerInterval(interaction.user.id);
 
     // Check if this is an authentication error (401)
