@@ -1,0 +1,46 @@
+Attempting to join voice channel: General (1431028180621459549)
+Voice connection created with initial state: signalling
+Waiting for ready state...
+🔊 Voice state change in Ryan T's server: User Scribe Uploader#9908
+Voice connection state: signalling -> connecting
+Voice connection state: connecting -> connecting
+Voice connection state: connecting -> connecting
+Voice connection state: connecting -> connecting
+Voice connection state: connecting -> ready
+✅ Voice connection ready!
+Voice connection state: ready -> ready
+📡 Voice receiver created, listening for speaking events...
+⏰ Connection stabilized, ready to subscribe to users
+🎙️ Started recording session for Discord user: 554785275285602348
+💾 Set write stream for Discord user: 554785275285602348
+🎛️ Set mixer interval for Discord user: 554785275285602348
+👥 Users in voice channel: rwtibbitts
+👥 User IDs: 554785275285602348
+📢 Proactively subscribing to 1 users in voice channel...
+🎤 Subscribing to user 554785275285602348 (rwtibbitts)
+🎧 Created Opus decoder for user 554785275285602348
+🎙️ Recording started for user rwtibbitts in channel General
+Voice connection state: ready -> destroyed
+✅ Closed and flushed write stream for Discord user: 554785275285602348
+🛑 Cleared mixer interval for Discord user: 554785275285602348
+🔊 Voice state change in Ryan T's server: User Scribe Uploader#9908
+📤 Uploading discord_Tomb_of_annihilation_1762461119235.m4a to S3...
+✅ Upload complete: https://scribe8a8fcf3f6cb14734bce4bd48352f8043195641-dev.s3.us-east-2.amazonaws.com/public/audioUploads/discord_Tomb_of_annihilation_1762461119235.m4a
+⏹️ Ended recording session for Discord user: 554785275285602348
+📼 Recording ready for user rwtibbitts, awaiting confirmation
+📝 Creating session to get ID...
+✅ Session created with ID: ceabdfd2-6767-4c8d-b3d3-3adb19dbedda
+📝 Generated filename: campaigna5b70a9b-b44b-4c86-82d6-0a27336b6010Sessionceabdfd2-6767-4c8d-b3d3-3adb19dbedda.m4a
+📤 Uploading file with standardized filename...
+📤 Uploading campaigna5b70a9b-b44b-4c86-82d6-0a27336b6010Sessionceabdfd2-6767-4c8d-b3d3-3adb19dbedda.m4a to S3...
+✅ Upload complete: https://scribe8a8fcf3f6cb14734bce4bd48352f8043195641-dev.s3.us-east-2.amazonaws.com/public/audioUploads/campaigna5b70a9b-b44b-4c86-82d6-0a27336b6010Sessionceabdfd2-6767-4c8d-b3d3-3adb19dbedda.m4a
+🗑️ Removing temporary upload with old filename...
+🗑️ Deleting public/audioUploads/discord_Tomb_of_annihilation_1762461119235.m4a from S3...
+✅ Delete complete: public/audioUploads/discord_Tomb_of_annihilation_1762461119235.m4a
+🔄 Updating session with correct audioFile...
+✅ Session "test 1;32" uploaded successfully by user rwtibbitts
+📥 Download requested by rwtibbitts
+   File path: /app/recordings/recording_554785275285602348_1762461073617.m4a
+   File exists: true
+   File size: 257 bytes (0.00 MB)
+✅ Recording sent successfully to rwtibbitts
