@@ -19,11 +19,17 @@ See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for complete deployment ins
 - ✅ Built-in monitoring and logs
 - ✅ $5/month free tier
 
+**Environment-Based Startup:**
+- The bot **only starts on Railway** (detected via `RAILWAY_ENVIRONMENT` variable)
+- On Replit, only the web server starts (for development/testing)
+- This prevents dual-instance conflicts that cause "Unknown interaction" errors
+
 **Replit Limitations:**
 - ❌ Reserved VMs may not support outbound UDP
 - ❌ Voice connections timeout after 20-30 seconds
-- ✅ Web authentication works
+- ✅ Web authentication works perfectly
 - ✅ Database and API integrations work
+- ✅ Bot automatically skips startup (prevents conflicts)
 
 ## Project Structure
 
