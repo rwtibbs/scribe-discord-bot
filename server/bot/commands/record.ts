@@ -366,17 +366,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       audioStream.pipe(opusDecoder);
     };
     
-    // Subscribe to all users currently in the voice channel
-    console.log(`📢 Proactively subscribing to ${membersInChannel.size} users in voice channel...`);
-    membersInChannel.forEach(member => {
-      subscribeToUser(member.id);
-    });
-    
-    // Also listen for new users joining or starting to speak
+    // Subscribe ONLY when users start speaking (Discord only sends audio after voice activity detection)
+    console.log(`📡 Listening for speaking events from ${membersInChannel.size} users in voice channel...`);
     receiver.speaking.on('start', (userId) => {
       const member = voiceChannel.guild.members.cache.get(userId);
       if (member && !member.user.bot) {
-        console.log(`🎤 New speaker detected: ${member.user.tag}`);
+        console.log(`🎤 Speaker detected: ${member.user.tag} - subscribing to audio stream`);
         subscribeToUser(userId);
       }
     });
