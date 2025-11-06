@@ -1,0 +1,65 @@
+📄 Fetching page 3...
+📊 Page 3 - Raw response: {"itemsCount":1,"hasNextToken":true,"nextToken":"eyJ2ZXJzaW9uIjozLCJ0b2tlbiI6IkFnVjRTV21ERHllSUMxZnhqUVNlZWJYVXdzbWd1aWVOZDMrL0VEYlRlNUhJdGpNQWV3QUNBQWRCY0hCVGVXNWpBQkZGYm1OeWVYQjBhVzl1UTI5dWRHVjRkQUFWWVhkekxXTnllWEIwYnkxd2RXSnNhV010YTJWNUFFUkJlbWg2U0VWYVVEaExibEZtV0hGQmVERm9XbHBJTURaV1FYWlRZU3RyVVVOeVpHVTFSa2hMTjFwNFJURlNkbW80TkhSTlFYSXZaRmx2VjJaT05VOHhPRUU5UFFBQkFBZGhkM010YTIxekFFdGhjbTQ2WVhkek9tdHRjenAxY3kxbFlYTjBMVEk2T0RFeE9EY3pOalF5TXprd09tdGxlUzlrWmpneVpXWmtZeTFpTW1JMUxUUTVZakV0T1dRMU1pMDNaREZrTldOalkyVTBNV01BdUFFQ0FRQjRSa2tCU1kwU25PZ0lzOWdEWTNnTThVeU5QYlhtcktuVm1ySFRUdFE1ZW1NQllUcUJibDRsaHo2V3FxRjdKaHp5cWdBQUFINHdmQVlKS29aSWh2Y05BUWNHb0c4d2JRSUJBREJvQmdrcWhraUc5dzBCQndFd0hnWUpZSVpJQVdVREJBRXVNQkVFREF5RElLeG5XSzFkbkVlSWtBSUJFSUE3Nk1yODZvaWg4aHB3bzRXS2h1ejFQMERaelpRYWJZME0xQm9teXRhaGhJT200cUk3Qmk1NUJyYWpqdnlBYVZkajh1cDIwb1NPM1ZGUitZQUNBQUFRQUxwNENZR04vWHhTOTI3MndFT0lOclhaaVdaSWh5bzE5UldwNVNRKzRkVmRJNk0rOXVkK0dwYmtqQ1ZvbWx4b09QLy8vLzhBQUFBQkFBQUFBQUFBQUFBQUFBQUJBQUFCdFlyZis3ak9kelU1TFBieWpqc0dEejZuWHQ5ajNIaDAzOHVOejBWMC95MmIvL3g0K0g4MUh2a29MZitnNTFXWnNWL1NXeTFtRVd3S1hvNVRLT1U3cnBseEE5TDlpOTlqZE9PZW50Q2dhOFVIV3BUSWx6eUxxUEVuWjhhdmZNUlBhT3BVOUpWVklmZGZGQU1WTGYrK2lmdExFVktxVXAyd0laeUxSbktqUy9TalkvNFB6Yklvc0FRTGhLUUdXRXBDZktRSWw1MUlJTTN1cWprSXNDdDhKU05QZnZkbGFJcCtuclU5QjhjcEdWaTE3M0xGaFZYQ3VQL0tPdVJSSWRNWlQ5UUFIZ2dmeGJackgzbUlPeUVaTElYQnN1NWNzSU43QUNNVWtUMUNuR1BNaWM2Z2UzYjFlSVpXdmltZ2RtcXpLVlFIQ1BuWjE4eDI2MFFOc055MXpRd2pqeFRoTVZ3Q3hjVzBYaTBtOU1YaVgyaGY3Zld2OHV0V2lZWGJEZTliQ3JJcktiTkY5NHprbXVMK1R3WHNoWjNvVVQwaktqbkU1ajdvbTdsd3gxUzdxM1FoK3Y5OERwNnAxQU9rQ0trQ2I3dThtRlJ0T2d3UjQxMjFqdDNRVnJQWGUzRzBwcm1FZ0dPY3dLc1RwenIyVnNpU2JGQUhzNXlON0h4a3UyYjVaV3oxQVN5WUxiTmZZbVhENVZndWlHeEY1aFJGQWMyYWNpODRvYkc5SWEwcmd3dis0M3JrUm14eWZOZmF4M2pkdktTZmlwejh1cE8waEtySW8xVWFoSnlLeWV1L2dBQm5NR1VDTUNYNFNUMlgrSVBZMS9YdTU3dk5xQW9EandaWTJMNDg0ZHBDbVhpdjNwajBscDFLQ2Q2ZE0xd1dxcnhFalM4UkNRSXhBUEJ6ajlSSVczWDdGeDlCdEIva2pDQ256bGJNaDBaVzdWME5tT21Cbkt1czJwRUtFbEdGKyt0NDgybmFBRENqZ0E9PSJ9"}
+📄 Fetching page 4...
+📊 Page 4 - Raw response: {"itemsCount":2,"hasNextToken":true,"nextToken":"eyJ2ZXJzaW9uIjozLCJ0b2tlbiI6IkFnVjR3cVBJTjZWdFBSSko2WnZSM2Q1UkdpVmtMVVFVMU5GR0ovZ25nbFpDL1pvQWV3QUNBQWRCY0hCVGVXNWpBQkZGYm1OeWVYQjBhVzl1UTI5dWRHVjRkQUFWWVhkekxXTnllWEIwYnkxd2RXSnNhV010YTJWNUFFUkJhR2hFVjFoalJUTnVhMDVtZGs1VmJ6aEpUR3c1ZUVSaGVIQmtaMk51ZVN0SFdrdEtNWEJPY2pad2NFTXdiMU5xVmpKemJsaFFVa3BRUldsV2VqWlllRUU5UFFBQkFBZGhkM010YTIxekFFdGhjbTQ2WVhkek9tdHRjenAxY3kxbFlYTjBMVEk2T0RFeE9EY3pOalF5TXprd09tdGxlUzlrWmpneVpXWmtZeTFpTW1JMUxUUTVZakV0T1dRMU1pMDNaREZrTldOalkyVTBNV01BdUFFQ0FRQjRSa2tCU1kwU25PZ0lzOWdEWTNnTThVeU5QYlhtcktuVm1ySFRUdFE1ZW1NQjdmUUhSSXlQaUovUE5NcFczdzg3OHdBQUFINHdmQVlKS29aSWh2Y05BUWNHb0c4d2JRSUJBREJvQmdrcWhraUc5dzBCQndFd0hnWUpZSVpJQVdVREJBRXVNQkVFREhTd3g4QUJZeG1EemVpdFJRSUJFSUE3ZHFyVGpvb0QyTEliM3ZDcFBlWXczRTZ6MVhXZU9PNGVrLzcrOWZvb1FuWTVTTUZlYU9hNjE2OEQyL3NiZWh2R3NYZkRVNW1SclZXbWplQUNBQUFRQUdzL0traHhKdXJnK1RNWTkwcjNBMTVIVmEwZVNPY1FWL1N5cWVMbGVDMklJMmhLdmFjVWJPNHJlVjhGbjREUjB2Ly8vLzhBQUFBQkFBQUFBQUFBQUFBQUFBQUJBQUFCdFZ5SjNPM1NYM3FnUnI3c0U5SElpUFZ6aVE2eitabnRYN3cxT2UxRGhsOE1JT3AxdXJzdVcwNzdhMnpmZU0wUzZKOGdIb0FuQzViVmswQTd2OVhNY0lFWEM4a3FTWCtkYjhEc2hUclhmMDlDK1pKSm1sU3lwT1Y4cVNrdWlKaHJ4QmFHekRzendPdDZ5WHhCQk9ZanhyN2hDczFwb1ZMdzBVZ0Y5ek1GOFJZL20vZEFoZnRCNGxSMTRFYWh1Z09HU3RzNWQ0RS85TlZrbWZQYWVtVk1kTEtSU3RENSt0d2xlUzRMUCtUdUdMTWxaR0QrMWhZTkwvSURDdXBxd09tZ0dwK1dKNFdsbVJYemZkdVAyN0ZKT1pPQURBOHNaczg2WFVCeURia0kvanljNis5cWd3bFhwOW5lUEwreVJpU2NRaU04SnVjWVlGQTcwUkxkVkpCbC9DOXdkR3hKYVZVZEoreU5BeXd0bFoxNm9abjRabFgwT1NHMVI2RjJXMGk4SG5ZS1lwcmlacWxzRGVidjJmWFlJTnBwUjBtY3pZYUE4REdLRkoxOHFsMFcrWk9jakZ6cGI2Unk5d3BtOEpIdy9VY2RXSGMvdktHQWlUb3IxYk4xc1d1OHNDazNVL3lqSW03Nm1nTXlPR0ZPc3FxUjB5UUZsc0R3U3NXcGFjNW5ySHNuV3VRMFk4Sk0zamJtRUtNaXYyVXBPZVZaOGJhdTFWdThWTU16Z1FsRmlzejdMcFJqWERwWHlzdk1sYmdMWENLcmxROHJaNjdST3drV05jYzNtK2FNbXp4dStnQm5NR1VDTVFDblVXS0IvZzVGU0pLTlVMRWVaVkVvUis5Rlk4YnlIb0lDTms4ajZZVjYrSnhGbEhBaXcweXBWQ3prcG9CL0Yvc0NNQjdjK2Nnd2RBcTJvUWlzeUpDeFlVa3lZWFVnS0Y3TWJFL3hPY2MrTlFBT0RBQlJSbE9xWkxWcEtQb3lVTHNmZnc9PSJ9"}
+  Campaign 1 (Page 3): "Tales from Erador" (ID: 14e73df6-e035-42d4-a5f3-c7c1d330c623)
+    Owner: "rwtibbitts"
+    Owner bytes: 72777469626269747473
+    Match: ❌ NO
+    Expected: "b19be540-20e1-702a-29c8-c41b308045fb::rwtibbitts"
+    Expected bytes: 62313962653534302d323065312d373032612d323963382d6334316233303830343566623a3a72777469626269747473
+    Deleted: NO
+➡️  More results available, fetching next page...
+  Campaign 1 (Page 4): "Test campaign" (ID: d61bd7d2-d2d3-4ad2-a07f-d92bca37a02d)
+    Owner: "rwtibbitts"
+📋 Final campaigns being returned:
+    Owner bytes: 72777469626269747473
+    Match: ❌ NO
+  1. "Tomb of annihilation"
+    Expected: "b19be540-20e1-702a-29c8-c41b308045fb::rwtibbitts"
+  2. "New test campaign"
+    Expected bytes: 62313962653534302d323065312d373032612d323963382d6334316233303830343566623a3a72777469626269747473
+  3. "Tales from Erador"
+    Deleted: NO
+  Campaign 2 (Page 4): "New new final-finalV2" (ID: 42570fe7-b625-4d34-9867-a55294821224)
+    Owner: "rwtibbitts"
+    Owner bytes: 72777469626269747473
+    Match: ❌ NO
+    Expected: "b19be540-20e1-702a-29c8-c41b308045fb::rwtibbitts"
+    Expected bytes: 62313962653534302d323065312d373032612d323963382d6334316233303830343566623a3a72777469626269747473
+    Deleted: NO
+➡️  More results available, fetching next page...
+📄 Fetching page 5...
+📊 Page 5 - Raw response: {"itemsCount":0,"hasNextToken":false,"nextToken":null}
+📊 Total campaigns fetched across 5 page(s): 5
+✅ After filtering deleted: 5 campaigns remaining
+✅ Voice connection ready!
+Voice connection state: ready -> ready
+  4. "Test campaign"
+  5. "New new final-finalV2"
+📡 Voice receiver created, listening for speaking events...
+Attempting to join voice channel: General (1431028180621459549)
+🎙️ Started recording session for Discord user: 554785275285602348
+Voice connection created with initial state: signalling
+💾 Set write stream for Discord user: 554785275285602348
+Waiting for ready state...
+🎛️ Set mixer interval for Discord user: 554785275285602348
+🔊 Voice state change in Ryan T's server: User Scribe Uploader#9908
+👥 Users in voice channel: rwtibbitts
+Voice connection state: signalling -> connecting
+👥 User IDs: 554785275285602348
+Voice connection state: connecting -> connecting
+Voice connection state: connecting -> connecting
+Voice connection state: connecting -> connecting
+📢 Proactively subscribing to 1 users in voice channel...
+Voice connection state: connecting -> ready
+🎤 Subscribing to user 554785275285602348 (rwtibbitts)
+🎙️ Recording started for user rwtibbitts in channel General
+Voice connection state: ready -> destroyed
+✅ Closed and flushed write stream for Discord user: 554785275285602348
+🛑 Cleared mixer interval for Discord user: 554785275285602348
+🔊 Voice state change in Ryan T's server: User Scribe Uploader#9908
+📤 Uploading discord_Tomb_of_annihilation_1762460467291.m4a to S3...
+✅ Upload complete: https://scribe8a8fcf3f6cb14734bce4bd48352f8043195641-dev.s3.us-east-2.amazonaws.com/public/audioUploads/discord_Tomb_of_annihilation_1762460467291.m4a
+⏹️ Ended recording session for Discord user: 554785275285602348
+📼 Recording ready for user rwtibbitts, awaiting confirmation
