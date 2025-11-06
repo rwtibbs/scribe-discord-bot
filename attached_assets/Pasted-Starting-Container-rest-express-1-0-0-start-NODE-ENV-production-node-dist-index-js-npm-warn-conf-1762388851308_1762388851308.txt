@@ -1,0 +1,116 @@
+Starting Container
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+npm warn config production Use `--omit=dev` instead.
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+🔄 Started refreshing application (/) commands.
+✅ Successfully reloaded application (/) commands.
+(node:20) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+12:19:19 AM [express] serving on port 8080
+✅ Discord bot logged in as Scribe Uploader#9908
+🤖 Bot is ready and listening for commands
+✅ Discord Bot started successfully
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+(node:20) Warning: Supplying "ephemeral" for interaction response options is deprecated. Utilize flags instead.
+🔍 getBaseUrl() called - checking environment variables:
+  PUBLIC_URL: https://discord-bot.tabletopscribe.com
+  REPLIT_DEV_DOMAIN: (not set)
+✅ Using PUBLIC_URL: https://discord-bot.tabletopscribe.com
+Setup command error: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    [errors]: [ [Error], [Error] ]
+  },
+  [Symbol(kMessage)]: ''
+}
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://localhost/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: AggregateError [ECONNREFUSED]: 
+      at internalConnectMultiple (node:net:1134:18)
+      at afterConnectMultiple (node:net:1715:7) {
+    code: 'ECONNREFUSED',
+🔍 getBaseUrl() called - checking environment variables:
+  PUBLIC_URL: https://discord-bot.tabletopscribe.com
+  REPLIT_DEV_DOMAIN: (not set)
+✅ Using PUBLIC_URL: https://discord-bot.tabletopscribe.com
+Setup command error: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://localhost/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: AggregateError [ECONNREFUSED]: 
+      at internalConnectMultiple (node:net:1134:18)
+      at afterConnectMultiple (node:net:1715:7) {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  },
+  [Symbol(kMessage)]: ''
+}
+12:24:43 AM [express] POST /api 200 in 1ms
+12:24:43 AM [express] POST /api/graphql 200 in 0ms
+12:24:44 AM [express] POST /api/gql 200 in 1ms
