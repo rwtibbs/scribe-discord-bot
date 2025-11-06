@@ -1,0 +1,102 @@
+
+
+You reached the start of the range
+Nov 5, 2025, 4:49 PM
+Starting Container
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+❌ Failed to start Discord Bot: Error: Missing DISCORD_BOT_TOKEN environment variable
+    at DiscordBot.start (file:///app/dist/index.js:1685:13)
+    at file:///app/dist/index.js:1752:15
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+❌ Failed to start Discord Bot: Error: Missing DISCORD_BOT_TOKEN environment variable
+    at DiscordBot.start (file:///app/dist/index.js:1685:13)
+    at file:///app/dist/index.js:1752:15
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+❌ Failed to start Discord Bot: Error: Missing DISCORD_BOT_TOKEN environment variable
+    at DiscordBot.start (file:///app/dist/index.js:1685:13)
+    at file:///app/dist/index.js:1752:15
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+❌ Failed to start Discord Bot: Error: Missing DISCORD_BOT_TOKEN environment variable
+    at DiscordBot.start (file:///app/dist/index.js:1685:13)
+    at file:///app/dist/index.js:1752:15
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+❌ Failed to start Discord Bot: Error: Missing DISCORD_BOT_TOKEN environment variable
+    at DiscordBot.start (file:///app/dist/index.js:1685:13)
+    at file:///app/dist/index.js:1752:15
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+❌ Failed to start Discord Bot: Error: Missing DISCORD_BOT_TOKEN environment variable
+    at DiscordBot.start (file:///app/dist/index.js:1685:13)
+    at file:///app/dist/index.js:1752:15
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:20) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
