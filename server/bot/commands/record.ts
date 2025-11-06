@@ -10,6 +10,8 @@ import {
   VoiceConnectionStatus,
   EndBehaviorType,
   entersState,
+  createAudioPlayer,
+  NoSubscriberBehavior,
 } from '@discordjs/voice';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream';
@@ -134,6 +136,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       adapterCreator: voiceChannel.guild.voiceAdapterCreator as any,
       selfDeaf: false,
       selfMute: true,
+      debug: false,
     });
 
     // Log connection state changes for debugging
@@ -158,6 +161,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       connection.destroy();
       throw new Error('Unable to establish voice connection. This may be a hosting environment limitation with UDP voice traffic.');
     }
+
+    // Create and attach an audio player to maintain connection stability
+    // Even though we're not playing audio, this prevents connection issues
+    const player = createAudioPlayer({
+      behaviors: {
+        noSubscriber: NoSubscriberBehavior.Play,
+      },
+    });
+    connection.subscribe(player);
 
     const receiver = connection.receiver;
 
