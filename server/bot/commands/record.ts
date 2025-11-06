@@ -206,12 +206,22 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     const writeStream = createWriteStream(filePath);
+    
+    // Track active audio streams to prevent duplicate subscriptions
+    const activeStreams = new Map<string, any>();
 
     receiver.speaking.on('start', (userId) => {
+      // Prevent duplicate subscriptions for the same user
+      if (activeStreams.has(userId)) {
+        return;
+      }
+
+      console.log(`🎤 User ${userId} started speaking`);
+
       const audioStream = receiver.subscribe(userId, {
         end: {
           behavior: EndBehaviorType.AfterSilence,
-          duration: 100,
+          duration: 2000, // Increased from 100ms to 2 seconds to prevent choppy audio
         },
       });
 
@@ -219,6 +229,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         frameSize: 960,
         channels: 2,
         rate: 48000,
+      });
+
+      activeStreams.set(userId, audioStream);
+
+      // When stream ends, remove from active streams so user can speak again
+      audioStream.on('end', () => {
+        console.log(`🎤 User ${userId} stopped speaking`);
+        activeStreams.delete(userId);
       });
 
       audioStream.pipe(opusDecoder).pipe(writeStream, { end: false });
