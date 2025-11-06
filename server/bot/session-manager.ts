@@ -3,6 +3,7 @@ import { UserSession, RecordingSession } from './types';
 class SessionManager {
   private userSessions: Map<string, UserSession> = new Map();
   private recordingSessions: Map<string, RecordingSession> = new Map();
+  private mixerIntervals: Map<string, NodeJS.Timeout> = new Map();
 
   setUserSession(discordId: string, session: UserSession): void {
     this.userSessions.set(discordId, session);
@@ -46,6 +47,22 @@ class SessionManager {
 
   getAllRecordingSessions(): RecordingSession[] {
     return Array.from(this.recordingSessions.values());
+  }
+
+  setMixerInterval(discordId: string, interval: NodeJS.Timeout): void {
+    // Clear existing interval if any
+    this.clearMixerInterval(discordId);
+    this.mixerIntervals.set(discordId, interval);
+    console.log(`🎛️ Set mixer interval for Discord user: ${discordId}`);
+  }
+
+  clearMixerInterval(discordId: string): void {
+    const interval = this.mixerIntervals.get(discordId);
+    if (interval) {
+      clearInterval(interval);
+      this.mixerIntervals.delete(discordId);
+      console.log(`🛑 Cleared mixer interval for Discord user: ${discordId}`);
+    }
   }
 }
 

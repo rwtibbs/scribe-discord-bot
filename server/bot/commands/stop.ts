@@ -237,6 +237,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     sessionManager.endRecording(interaction.user.id);
+    sessionManager.clearMixerInterval(interaction.user.id);
     
     // Also remove active recording from database
     await storage.deleteActiveRecording(interaction.user.id);
@@ -285,6 +286,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     console.error('Stop error:', error);
 
     sessionManager.endRecording(interaction.user.id);
+    sessionManager.clearMixerInterval(interaction.user.id);
 
     const errorEmbed = new EmbedBuilder()
       .setColor(DISCORD_COLORS.ERROR)

@@ -207,8 +207,70 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     const writeStream = createWriteStream(filePath);
     
-    // Track active audio streams to prevent duplicate subscriptions
+    // Audio mixer: Combines PCM data from multiple speakers
+    // Maps userId -> Buffer[] (queued PCM chunks)
+    const userBuffers = new Map<string, Buffer[]>();
+    const SAMPLE_RATE = 48000;
+    const CHANNELS = 2;
+    const BYTES_PER_SAMPLE = 2; // 16-bit PCM
+    const FRAME_DURATION_MS = 20; // Mix every 20ms
+    const FRAME_SIZE = Math.floor((SAMPLE_RATE * CHANNELS * BYTES_PER_SAMPLE * FRAME_DURATION_MS) / 1000);
+    
+    // Track active audio streams
     const activeStreams = new Map<string, any>();
+    
+    // Mixer interval: every 20ms, mix all available audio and write to file
+    // Register immediately to prevent resource leaks
+    const mixerInterval = setInterval(() => {
+      // Collect one frame from each active user
+      const frames: Buffer[] = [];
+      
+      for (const [userId, buffers] of Array.from(userBuffers.entries())) {
+        if (buffers.length === 0) continue;
+        
+        // Get and remove the first buffer for this user
+        const chunk = buffers.shift()!;
+        frames.push(chunk);
+        
+        // Keep the buffer queue alive (don't delete) so future audio chunks can be queued
+      }
+      
+      if (frames.length === 0) return; // Nothing to mix
+      
+      // Mix the frames by summing and normalizing samples
+      const maxLength = Math.max(...frames.map(f => f.length));
+      const mixed = Buffer.alloc(maxLength);
+      const numFrames = frames.length;
+      
+      for (let i = 0; i < maxLength; i += 2) {
+        let sum = 0;
+        let count = 0;
+        
+        // Sum samples from all frames at this position
+        for (const frame of frames) {
+          if (i + 1 < frame.length) {
+            // Read 16-bit signed integer (little-endian)
+            const sample = frame.readInt16LE(i);
+            sum += sample;
+            count++;
+          }
+        }
+        
+        // Normalize by number of active speakers to prevent clipping
+        // This maintains headroom while preserving audio quality
+        const normalized = count > 0 ? Math.floor(sum / count) : 0;
+        
+        // Clamp to prevent overflow (-32768 to 32767)
+        const clamped = Math.max(-32768, Math.min(32767, normalized));
+        mixed.writeInt16LE(clamped, i);
+      }
+      
+      // Write mixed audio to file
+      writeStream.write(mixed);
+    }, FRAME_DURATION_MS);
+    
+    // Register mixer interval for cleanup
+    sessionManager.setMixerInterval(interaction.user.id, mixerInterval);
 
     receiver.speaking.on('start', (userId) => {
       // Prevent duplicate subscriptions for the same user
@@ -221,7 +283,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       const audioStream = receiver.subscribe(userId, {
         end: {
           behavior: EndBehaviorType.AfterSilence,
-          duration: 2000, // Increased from 100ms to 2 seconds to prevent choppy audio
+          duration: 2000, // 2 seconds of silence before ending
         },
       });
 
@@ -231,15 +293,39 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         rate: 48000,
       });
 
-      activeStreams.set(userId, audioStream);
+      // Initialize buffer queue for this user
+      if (!userBuffers.has(userId)) {
+        userBuffers.set(userId, []);
+      }
 
-      // When stream ends, remove from active streams so user can speak again
+      // When decoder produces PCM data, add to user's buffer queue
+      opusDecoder.on('data', (pcmChunk: Buffer) => {
+        const buffers = userBuffers.get(userId);
+        if (buffers) {
+          buffers.push(pcmChunk);
+        }
+      });
+
+      activeStreams.set(userId, { audioStream, opusDecoder });
+
+      // Cleanup when stream ends
       audioStream.on('end', () => {
         console.log(`🎤 User ${userId} stopped speaking`);
         activeStreams.delete(userId);
+        
+        // Flush remaining buffers for this user
+        setTimeout(() => {
+          userBuffers.delete(userId);
+        }, 1000); // Give mixer time to process remaining data
       });
 
-      audioStream.pipe(opusDecoder).pipe(writeStream, { end: false });
+      audioStream.on('error', (error) => {
+        console.error(`Audio stream error for user ${userId}:`, error);
+        activeStreams.delete(userId);
+        userBuffers.delete(userId);
+      });
+
+      audioStream.pipe(opusDecoder);
     });
 
     const startedEmbed = new EmbedBuilder()
@@ -259,6 +345,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     console.log(`🎙️ Recording started for user ${interaction.user.tag} in channel ${voiceChannel.name}`);
   } catch (error: any) {
     console.error('Record error:', error);
+    
+    // Clean up mixer interval if it was created
+    sessionManager.clearMixerInterval(interaction.user.id);
 
     // Check if this is an authentication error (401)
     const is401Error = error.message?.includes('401') || error.statusCode === 401;
