@@ -69,21 +69,34 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Initialize libsodium for Discord voice encryption
-  console.log('🔐 Initializing voice encryption...');
-  await sodium.ready;
-  console.log('✅ Voice encryption ready');
-
-  // Start Discord Bot
-  console.log('🚀 Starting TabletopScribe Discord Bot...');
-  const bot = new DiscordBot();
+  // Only start Discord bot on Railway (production), not on Replit (development)
+  const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
+  const isReplit = !!process.env.REPLIT_DEV_DOMAIN;
   
-  try {
-    await bot.start();
-    console.log('✅ Discord Bot started successfully');
-  } catch (error) {
-    console.error('❌ Failed to start Discord Bot:', error);
-    process.exit(1);
+  console.log('🔍 Environment Detection:');
+  console.log(`  Railway: ${isRailway ? '✅ YES' : '❌ NO'}`);
+  console.log(`  Replit: ${isReplit ? '✅ YES' : '❌ NO'}`);
+  
+  if (isRailway) {
+    // Initialize libsodium for Discord voice encryption
+    console.log('🔐 Initializing voice encryption...');
+    await sodium.ready;
+    console.log('✅ Voice encryption ready');
+
+    // Start Discord Bot
+    console.log('🚀 Starting TabletopScribe Discord Bot...');
+    const bot = new DiscordBot();
+    
+    try {
+      await bot.start();
+      console.log('✅ Discord Bot started successfully');
+    } catch (error) {
+      console.error('❌ Failed to start Discord Bot:', error);
+      process.exit(1);
+    }
+  } else {
+    console.log('⏭️  Skipping Discord Bot (only runs on Railway deployment)');
+    console.log('💻 Web interface available for development/testing');
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
