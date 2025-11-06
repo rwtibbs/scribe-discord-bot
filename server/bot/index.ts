@@ -26,6 +26,13 @@ export class DiscordBot {
         GatewayIntentBits.GuildMessages,
       ],
     });
+    
+    // Log when client detects voice state changes
+    this.client.on('voiceStateUpdate', (oldState, newState) => {
+      if (newState.guild) {
+        console.log(`🔊 Voice state change in ${newState.guild.name}: User ${newState.member?.user.tag || 'Unknown'}`);
+      }
+    });
 
     this.commands = new Collection();
 

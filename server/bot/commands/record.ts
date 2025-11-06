@@ -172,6 +172,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     connection.subscribe(player);
 
     const receiver = connection.receiver;
+    
+    console.log(`📡 Voice receiver created, listening for speaking events...`);
 
     const recordingDir = path.join(process.cwd(), 'recordings');
     if (!fs.existsSync(recordingDir)) {
@@ -282,13 +284,20 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // Register mixer interval for cleanup
     sessionManager.setMixerInterval(interaction.user.id, mixerInterval);
 
-    receiver.speaking.on('start', (userId) => {
-      // Prevent duplicate subscriptions for the same user
+    // Debug: Log all users in the voice channel
+    const membersInChannel = voiceChannel.members.filter(m => !m.user.bot);
+    console.log(`👥 Users in voice channel: ${membersInChannel.map(m => m.user.tag).join(', ')}`);
+    console.log(`👥 User IDs: ${membersInChannel.map(m => m.id).join(', ')}`);
+    
+    // Helper function to subscribe to a user's audio
+    const subscribeToUser = (userId: string) => {
       if (activeStreams.has(userId)) {
+        console.log(`⏭️  User ${userId} already subscribed, skipping`);
         return;
       }
 
-      console.log(`🎤 User ${userId} started speaking`);
+      const member = voiceChannel.guild.members.cache.get(userId);
+      console.log(`🎤 Subscribing to user ${userId} (${member?.user.tag || 'Unknown'})`);
 
       const audioStream = receiver.subscribe(userId, {
         end: {
@@ -343,6 +352,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       });
 
       audioStream.pipe(opusDecoder);
+    };
+    
+    // Subscribe to all users currently in the voice channel
+    console.log(`📢 Proactively subscribing to ${membersInChannel.size} users in voice channel...`);
+    membersInChannel.forEach(member => {
+      subscribeToUser(member.id);
+    });
+    
+    // Also listen for new users joining or starting to speak
+    receiver.speaking.on('start', (userId) => {
+      const member = voiceChannel.guild.members.cache.get(userId);
+      if (member && !member.user.bot) {
+        console.log(`🎤 New speaker detected: ${member.user.tag}`);
+        subscribeToUser(userId);
+      }
     });
 
     const startedEmbed = new EmbedBuilder()
