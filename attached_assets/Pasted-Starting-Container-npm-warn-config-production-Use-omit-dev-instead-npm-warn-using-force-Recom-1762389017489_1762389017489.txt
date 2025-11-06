@@ -1,0 +1,54 @@
+Starting Container
+npm warn config production Use `--omit=dev` instead.
+npm warn using --force Recommended protections disabled.
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/app/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] Pulling schema from database...
+      syscall: 'connect',
+      address: '::1',
+      port: 5432
+    },
+AggregateError [ECONNREFUSED]: 
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Object.query (/app/node_modules/drizzle-kit/bin.cjs:80601:26)
+    at async fromDatabase2 (/app/node_modules/drizzle-kit/bin.cjs:19253:25) {
+    Error: connect ECONNREFUSED 127.0.0.1:5432
+  code: 'ECONNREFUSED',
+  [errors]: [
+        at createConnectionError (node:net:1678:14)
+    Error: connect ECONNREFUSED ::1:5432
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 5432
+    }
+  ]
+}
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅ Voice encryption ready
+🚀 Starting TabletopScribe Discord Bot...
+🔄 Started refreshing application (/) commands.
+🔧 GraphQL Client configured for DEV environment
+🔐 Initializing voice encryption...
+(node:62) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+ SDK releases are limited to address critical bug fixes and security issues only.
+✅ Successfully reloaded application (/) commands.
+✅ Discord bot logged in as Scribe Uploader#9908
+🤖 Bot is ready and listening for commands
+✅ Discord Bot started successfully
+(node:62) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
